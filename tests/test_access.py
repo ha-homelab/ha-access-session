@@ -8,7 +8,7 @@ import sys
 import time
 from types import ModuleType, SimpleNamespace
 import unittest
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
@@ -313,6 +313,7 @@ class AccessTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(adapter.url, "/api/custom_dashboard/session")
         self.assertEqual(adapter.name, "api:custom:session")
 
+    @patch.object(access, "time", SimpleNamespace(time=time.time, monotonic=lambda: 10.0))
     async def test_jwks_fixed_destination_rotation_rate_limit_and_failure(self):
         key = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(KEY.public_key()))
         key.update(kid="rotated", alg="RS256", use="sig")
@@ -324,7 +325,9 @@ class AccessTest(unittest.IsolatedAsyncioTestCase):
         context = AsyncMock()
         context.__aenter__.return_value = response
         self.hass.http_client = SimpleNamespace(get=Mock(return_value=context))
-        self.view.fetched = 0
+        # Zero is not an expired timestamp on a newly booted CI runner.
+        # Keep the clock near boot to exercise cache expiry independently of uptime.
+        self.view.fetched = access.time.monotonic() - 301
         raw = jwt.encode(
             self.claims(),
             KEY,
@@ -341,11 +344,11 @@ class AccessTest(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(web.HTTPUnauthorized):
                 await self.view.post(self.request(self.sign()))
         self.hass.http_client.get.assert_called_once()
-        self.view.fetched = 0
+        self.view.fetched = access.time.monotonic() - 301
         response.status = 302
         with self.assertRaises(web.HTTPServiceUnavailable):
             await self.view.post(self.request(raw))
-        self.view.fetched = 0
+        self.view.fetched = access.time.monotonic() - 301
         response.status = 200
 
         async def huge(_):
