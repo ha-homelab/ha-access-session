@@ -25,6 +25,14 @@ Use this only after understanding and isolating the issuer policy that signs tho
 
 ## Known limits
 
+Development and CI use PyJWT 2.15.1, including its published security fixes.
+The integration uses Home Assistant's installed PyJWT and aiohttp; it does not
+replace HA's dependency constraints. Keep HA updated and review its dependency
+advisories before deployment. This verifier accepts RS256 only, performs its own
+bounded fixed-origin JWKS fetch without redirects, and rejects non-canonical
+JWT segments before signature verification. Those controls do not certify other
+integrations that share the host's dependencies.
+
 This is an initial public beta, not a security audit or a tested production HA add-on. Tests use real RSA signatures and local HTTP/WebSocket servers, but mock HA's auth and storage lifecycle. No real HA version, cloud Access account, browser SSO flow, reverse proxy, device or public deployment was exercised for this release. Changes to HA internal auth/storage APIs may require an adapter update. Test against your intended disposable HA version first.
 
 No least-privilege token scopes, multi-user mapping, service-token admission, distributed instant logout, rate-limiting proxy, custom login UI, Access provisioning or automatic JWT renewal is included. Capacity limits are denial-of-service bounds, not a replacement for edge rate limits. The Go verifier's key cache follows go-oidc behavior; the HA verifier refreshes after five minutes and rate-limits unknown-key refreshes to thirty seconds once a valid keyset is cached. Removal of a cached signing key is not instantaneous revocation.

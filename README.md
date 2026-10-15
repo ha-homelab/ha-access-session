@@ -8,7 +8,7 @@ This is the extracted authentication boundary, with a generic synthetic demo. It
 
 ![Synthetic HA Access Session demo](docs/demo.jpg)
 
-Python/integration version: `0.1.0b1`; matching release tag: `v0.1.0-beta.1`.
+Source version: `0.1.0`. Download a versioned beta from [Releases](https://github.com/ha-homelab/ha-access-session/releases); its Python version uses PEP 440 (`0.1.0bN`) and its Git tag uses `v0.1.0-beta.N`.
 
 ## What it is useful for
 

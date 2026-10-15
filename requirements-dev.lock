@@ -26,7 +26,7 @@ propcache==0.5.4
     #   yarl
 pycparser==3.11
     # via cffi
-pyjwt==2.10.1
+pyjwt==2.15.1
     # via -r requirements-dev.txt
 ruff==0.14.1
     # via -r requirements-dev.txt
