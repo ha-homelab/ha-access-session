@@ -5,6 +5,7 @@
 - Extract the signed Access-to-HA session boundary into a reusable standalone integration and Go gateway.
 - Add explicit trust configuration, contract v1, generic embedded demo and a thin adapter API.
 - Add durable used-assertion tombstones, bounded credentials/connections, fixed route/header allowlists and isolated security tests.
+- Permit signed top-level dashboard navigation from external links and identity-provider redirects; keep cross-site API, iframe and write rejection.
 - Initial beta: one mapped administrator; no live HA/cloud qualification or independent audit claimed.
 
 ### Upgrade
