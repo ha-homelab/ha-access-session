@@ -38,7 +38,7 @@ An optional, default-off HA OAuth compatibility policy is documented in [operati
 
 ## Install
 
-1. Download the matching HA integration ZIP and gateway release archive. Verify them with the release `SHA256SUMS` file. Extract the integration ZIP into the HA configuration directory so the path is `custom_components/ha_access_session/manifest.json`.
+1. Download all assets for one release from [Releases](https://github.com/ha-homelab/ha-access-session/releases) and follow [signed-release verification](docs/release-signatures.md) before extracting or running them. Extract the HA integration ZIP into the HA configuration directory so the path is `custom_components/ha_access_session/manifest.json`, and extract the gateway archive for your platform.
 2. Add the block from [examples/configuration.yaml](examples/configuration.yaml) to HA's `configuration.yaml`. Set your Access issuer, exact public HTTPS origin, dedicated application's audience, mapped email and explicit HA administrator user ID. The all-zero ID is a nonfunctional placeholder. Do not infer an account by name, first administrator, or request input.
 3. Restart HA. This integration uses YAML configuration; it has no UI config flow. The beta's HA auth lifecycle is tested with isolated mocks, **not a live HA release**. Qualify it in a disposable HA instance before using a real home.
 4. Copy [examples/gateway.json](examples/gateway.json), set the same issuer/origin/audience/email, and set the HA upstream origin. Use HTTPS to HA. An isolated trusted network may opt into HTTP with `allow_insecure_upstream: true`; this carries session assertions and tokens in plaintext on that link.
