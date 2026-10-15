@@ -1,0 +1,60 @@
+{
+  "repository": "ha-homelab/ha-access-session",
+  "mode": "release",
+  "default_branch": "main",
+  "visibility": "public",
+  "version_file": "version",
+  "validation_workflows": [
+    "tests.yml",
+    "security.yml"
+  ],
+  "artifact_pattern": "release-assets*",
+  "local_checks": [
+    "sh scripts/check.sh"
+  ],
+  "notes": [
+    "Examples and screenshots are synthetic. Site configuration, credentials, real observations and private Git history are excluded.",
+    "Offline tests cover simulated boundaries. A beta release does not establish compatibility with every camera, network or Home Assistant installation."
+  ],
+  "release_notes": "CHANGELOG.md",
+  "single_entry_ci": true,
+  "versioning": {
+    "schema": 1,
+    "promotion": "promote-bytes",
+    "files": [
+      {
+        "path": "version",
+        "format": "text",
+        "value": "package",
+        "ecosystem": "pep440"
+      },
+      {
+        "path": "pyproject.toml",
+        "format": "toml",
+        "field": "project.version",
+        "value": "package",
+        "ecosystem": "pep440"
+      },
+      {
+        "path": "custom_components/ha_access_session/manifest.json",
+        "format": "json",
+        "field": "version",
+        "value": "package",
+        "ecosystem": "pep440"
+      }
+    ],
+    "artifacts": [
+      {
+        "path": "ha-access-session-*.zip",
+        "format": "zip-json",
+        "member": "custom_components/ha_access_session/manifest.json",
+        "field": "version",
+        "value": "package",
+        "ecosystem": "pep440"
+      }
+    ],
+    "toolkit_revision": "ece79d1b1ca40d3068d373e515daf58115489a22"
+  },
+  "toolkit_revision": "ece79d1b1ca40d3068d373e515daf58115489a22",
+  "sign_releases": true
+}

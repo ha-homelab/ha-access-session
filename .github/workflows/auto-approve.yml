@@ -1,0 +1,30 @@
+name: Auto Approve PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited, converted_to_draft]
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited, converted_to_draft]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number }}-${{ (github.event.action != 'edited' || github.event.changes.base) && 'state' || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+jobs:
+  auto-approve:
+    permissions:
+      contents: read
+      pull-requests: write
+    if: >-
+      (github.event.action != 'edited' || github.event.changes.base) &&
+      ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+       (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository)) &&
+      contains(fromJSON('["4alvit","californiantiramisu","dependabot[bot]","renovate[bot]"]'), github.event.pull_request.user.login) &&
+      !github.event.pull_request.draft &&
+      contains(github.event.pull_request.labels.*.name, 'auto-approve')
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/auto-approve-reusable.yml@ece79d1b1ca40d3068d373e515daf58115489a22
+    secrets:
+      BOT_PAT: ${{ secrets.BOT_PAT }}
+      APPROVAL_PAT: ${{ secrets.APPROVAL_PAT }}

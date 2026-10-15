@@ -1,0 +1,11 @@
+{
+  "domain": "ha_access_session",
+  "name": "HA Access Session (Beta)",
+  "version": "0.1.0",
+  "documentation": "https://github.com/ha-homelab/ha-access-session",
+  "issue_tracker": "https://github.com/ha-homelab/ha-access-session/issues",
+  "codeowners": [],
+  "dependencies": ["http"],
+  "requirements": [],
+  "iot_class": "local_push"
+}

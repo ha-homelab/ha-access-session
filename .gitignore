@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+dist/
+.coverage
+.ruff_cache/
+.DS_Store

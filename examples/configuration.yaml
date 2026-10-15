@@ -1,0 +1,11 @@
+# Merge into Home Assistant configuration.yaml; replace all example values.
+ha_access_session:
+  issuer: https://access.example.invalid
+  origin: https://dashboard.example.invalid
+  audience: replace-with-dedicated-access-application-audience
+  email: owner@example.invalid
+  user_id: "00000000000000000000000000000000" # Explicit HA administrator UUID
+  allow_trusted_network: false
+  token_lifetime_seconds: 300
+  max_assertion_lifetime_seconds: 86400
+  max_sessions: 32
