@@ -75,7 +75,7 @@ go mod download
 ./scripts/build.sh
 ```
 
-`check.sh` runs offline RSA/JWT, mocked HA lifecycle, route, static-file, and loopback WebSocket tests, Go race detection, vet and formatting, plus Python lint and formatting. Set `HA_PYTHON` to a separate Python environment with Home Assistant installed to additionally run the [real-HA lifecycle canary](docs/compatibility.md#repeat-the-real-ha-canary). `build.sh` produces the integration ZIP, Linux amd64/arm64 gateway archives, source archive and checksums in `dist/`. No test contacts your HA, devices, identity provider, or cloud account.
+`check.sh` runs offline RSA/JWT, mocked HA lifecycle, route, static-file, and loopback WebSocket tests, Go race detection, vet and formatting, plus Python lint and formatting. Set `HA_PYTHON` to a separate Python environment with Home Assistant installed to additionally run the [real-HA lifecycle canary](docs/compatibility.md#repeat-the-real-ha-canary). CI requires this canary on both the source and built integration ZIP using isolated Home Assistant 2026.10.0 dependencies. `build.sh` produces the integration ZIP, Linux amd64/arm64 gateway archives, source archive and checksums in `dist/`. No test contacts your HA, devices, identity provider, or cloud account.
 
 Tests cover signature/issuer/audience/time validation, exact network opt-in, forged identity headers, fixed mapping, cross-origin requests, duplicate assertions, arbitrary routes and query rejection, bounded token lifetime, server-side refresh credentials, logout/profile/restart revocation, persistence failure, JWKS rotation/failure/size limits, static symlinks, upstream redirects, and WebSocket closure. [Known limits](docs/security.md#known-limits) are part of the beta contract.
 

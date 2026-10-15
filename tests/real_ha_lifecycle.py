@@ -1,4 +1,4 @@
-"""Optional real-HA canary; run directly in an environment with HA installed.
+"""Real-HA canary required in CI; run in an environment with HA installed.
 
 All state is temporary. Socket connections, listeners and DNS are denied before
 HA imports. This runs separately from tests/test_access.py, which installs stubs.

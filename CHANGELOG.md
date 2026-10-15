@@ -7,7 +7,7 @@
 - Add durable used-assertion tombstones, bounded credentials/connections, fixed route/header allowlists and isolated security tests.
 - Permit signed top-level dashboard navigation from external links and identity-provider redirects; keep cross-site API, iframe and write rejection.
 - Keep scheduled assertion expiry on the HA event loop and cancel pending expiry timers after manual revocation. This fixes a reproduced HA 2026.10.0 thread-safety failure during refresh-token removal.
-- Add an optional network-disabled real-HA canary for setup, auth/storage, logout, restart and natural expiry.
+- Require the network-disabled real-HA canary in CI for source and packaged integration setup, auth/storage, logout, restart and natural expiry; retain local opt-in through `HA_PYTHON`.
 - Include YAML/JSON installation examples in the integration ZIP and document staged installation, rollback, precise compatibility evidence and release qualification limits. No live cloud qualification or independent audit is claimed.
 
 ### Upgrade
