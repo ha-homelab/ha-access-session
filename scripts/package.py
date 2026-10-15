@@ -67,7 +67,7 @@ def archive_tar(destination, entries):
 integration = [
     p
     for p in files
-    if p.relative_to(root).parts[0] in {"custom_components", "licenses", "docs"}
+    if p.relative_to(root).parts[0] in {"custom_components", "licenses", "docs", "examples"}
     or p.name in {"LICENSE", "README.md", "THIRD_PARTY_NOTICES.md"}
 ]
 with zipfile.ZipFile(

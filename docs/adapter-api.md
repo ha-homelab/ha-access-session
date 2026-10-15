@@ -1,6 +1,6 @@
 # Thin compatibility adapters
 
-The standalone HA integration provides the public Python implementation in `custom_components.ha_access_session.access`. Install that integration package or vendor its **unmodified versioned directory** and MIT/license notices; do not copy and diverge the verifier logic. The only versioned protocol is contract v1. This Python API is beta and may change between prereleases.
+The standalone HA integration provides the public Python implementation in `custom_components.ha_access_session.access`. Install that integration package or vendor its **unmodified versioned directory** and MIT/license notices; do not copy and diverge the verifier logic. The only versioned protocol is contract v1. Pin the Python implementation and Go gateway to the same reviewed release; prerelease implementation APIs may change.
 
 ```python
 from custom_components.ha_access_session.access import AccessConfig, AccessSessions

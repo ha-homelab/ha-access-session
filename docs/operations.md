@@ -12,13 +12,17 @@ Gateway `upstream` is a single origin, with no path/user information/query/fragm
 
 ## Troubleshooting
 
+**Integration not found / YAML rejected:** check that the installed path is exactly `custom_components/ha_access_session/manifest.json`, with no doubled directory, and restart HA. Supply the YAML block as a mapping, not a list. Booleans must be YAML booleans and lifetimes must be integers. HA logs should classify invalid settings as a configuration validation error.
+
 **401 before loading the page:** verify the edge supplies exactly one signed assertion for the dedicated application. Compare issuer/audience and synchronize clocks. A cookie, plain email header or IP header is insufficient. Do not paste JWTs into online decoders or issues.
 
-**403:** verify the exact public Host and HTTPS Origin and exact mapped email. In HA, verify the configured ID is an active, non-local-only, non-system-generated administrator. Non-admin support is intentionally absent in this beta.
+**403:** verify the exact public Host and HTTPS Origin and exact mapped email. In HA, verify the configured ID is an active, non-local-only, non-system-generated administrator. Non-admin support is intentionally absent in v1.
 
 **401 after logout or HA restart:** expected. Obtain a fresh assertion by signing out of the dedicated Access application and signing back in. Reusing a still-cached assertion cannot recreate its old session.
 
 **429:** too many distinct assertions remain unexpired. The default HA cap includes revoked/used assertion hashes until their original expiry; waiting for expiry releases capacity. Do not delete the revocation store. Inspect whether a client is repeatedly forcing new Access logins.
+
+**200 from `/healthz`, but session creation fails:** liveness proves only that the gateway is serving HTTP. It does not verify the Access key service, HA integration, configured account or durable storage. Use the authenticated demo to test the exchange, without device commands.
 
 **502/503:** check gateway-to-HA connectivity, server certificate trust, key-service availability and HA storage permissions. The service deliberately rejects redirects at both the key-fetch and proxy boundaries. Fix the configured final endpoint rather than weakening verification.
 
@@ -27,6 +31,8 @@ Gateway `upstream` is a single origin, with no path/user information/query/fragm
 **WebSocket reconnects:** expected at the configured maximum connection age, even if the Access session lasts longer. Obtain/reuse an unexpired short token through the exchange and reconnect. The demo does not perform device operations or open a WebSocket.
 
 ## Updates and removal
+
+Follow the [staged upgrade and rollback procedure](installation.md#upgrade-and-rollback). HA configuration reload alone is not an integration upgrade; restart HA after replacing the files. The expected reauthentication after that restart is part of the replay-prevention policy.
 
 Install matching component versions and retain HA's revocation storage across updates. Keep issuer/origin/client ID stable. Before changing the origin or removing the integration, revoke its managed `HA Access Session` refresh tokens in the HA profile or an administrator-controlled HA maintenance procedure. Stop the gateway before changing trust settings. Removing a component or changing the client ID cannot retroactively discover tokens stored under a former client ID.
 

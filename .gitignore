@@ -1,4 +1,5 @@
 .venv/
+.ha-test/
 __pycache__/
 *.pyc
 dist/

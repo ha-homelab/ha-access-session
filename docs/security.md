@@ -1,4 +1,4 @@
-# Threat model and beta limits
+# Threat model and limits
 
 ## Authority and assumptions
 
@@ -20,7 +20,7 @@ Use this only after understanding and isolating the issuer policy that signs tho
 - Deleting the managed refresh token through HA prevents further issuance. Existing WebSocket connections may remain authenticated until their bounded connection deadline; the gateway enforces at most 300 seconds.
 - HA restart removes managed refresh tokens and treats every persisted used assertion as revoked. A new Access assertion is required. This prioritizes replay prevention over automatic reconnect after restart.
 - Gateway memory is not a shared revocation database. Other gateway replicas may retain already-open sockets until their deadline; HA still rejects reissue after logout. Gateway restart drops sockets and resets its local tombstones, while HA durable tombstones remain authoritative for exchange.
-- A copied already-issued HA access token is not origin-bound and can be presented directly to any reachable HA endpoint. Protect the HA network boundary. Directly established HA connections are outside the gateway's connection deadline.
+- A copied already-issued HA access token is not origin-bound and can be presented directly to any reachable HA endpoint. `expires_in` describes the JWT's nominal expiry; HA 2026.10.0 accepts access-token expiry with up to ten seconds of clock leeway while its backing refresh token still exists. Assertion expiry removes that refresh token, and gateway connection limits are separate. Protect the HA network boundary. Directly established HA connections are outside the gateway's connection deadline.
 - Logging out of Access alone does not notify this service or erase a still-valid signed JWT. Use the explicit exchange logout too. Assertion expiry bounds future admission, and the connection deadline bounds current gateway streams.
 
 ## Known limits
@@ -33,7 +33,7 @@ bounded fixed-origin JWKS fetch without redirects, and rejects non-canonical
 JWT segments before signature verification. Those controls do not certify other
 integrations that share the host's dependencies.
 
-This is an initial public beta, not a security audit or a tested production HA add-on. Tests use real RSA signatures and local HTTP/WebSocket servers, but mock HA's auth and storage lifecycle. No real HA version, cloud Access account, browser SSO flow, reverse proxy, device or public deployment was exercised for this release. Changes to HA internal auth/storage APIs may require an adapter update. Test against your intended disposable HA version first.
+Automated review and tests do not constitute an independent security audit or production certification. Tests use real RSA signatures and local HTTP/WebSocket servers. A separate network-disabled canary exercises real Home Assistant 2026.10.0 configuration, auth, storage and scheduled expiry in temporary state. No cloud Access account, browser SSO flow, reverse proxy, device or public deployment was exercised by that canary. See [compatibility evidence and release criteria](compatibility.md); changes to HA internal auth/storage APIs may require an adapter update.
 
 No least-privilege token scopes, multi-user mapping, service-token admission, distributed instant logout, rate-limiting proxy, custom login UI, Access provisioning or automatic JWT renewal is included. Capacity limits are denial-of-service bounds, not a replacement for edge rate limits. The Go verifier's key cache follows go-oidc behavior; the HA verifier refreshes after five minutes and rate-limits unknown-key refreshes to thirty seconds once a valid keyset is cached. Removal of a cached signing key is not instantaneous revocation.
 
