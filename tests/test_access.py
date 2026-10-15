@@ -19,12 +19,14 @@ for name in (
     "homeassistant",
     "homeassistant.components",
     "homeassistant.components.http",
+    "homeassistant.core",
     "homeassistant.helpers",
     "homeassistant.helpers.aiohttp_client",
     "homeassistant.helpers.event",
 ):
     sys.modules[name] = ModuleType(name)
 sys.modules["homeassistant.components.http"].HomeAssistantView = object
+sys.modules["homeassistant.core"].callback = lambda fn: fn
 sys.modules["homeassistant.helpers.aiohttp_client"].async_get_clientsession = (
     lambda hass: hass.http_client
 )
@@ -275,6 +277,16 @@ class AccessTest(unittest.IsolatedAsyncioTestCase):
         restored.fetched = self.view.fetched
         with self.assertRaises(web.HTTPUnauthorized):
             await restored.post(self.request(raw))
+
+    async def test_logout_cancels_pending_expiry(self):
+        cancel = Mock()
+        raw = self.sign()
+        with patch.object(access, "async_call_later", return_value=cancel):
+            await self.view.post(self.request(raw))
+        await self.view.post(self.request(raw, path=access.SESSION_PATH + "?revoke=1"))
+        cancel.assert_called_once_with()
+        self.assertEqual(self.view.timers, {})
+        self.assertEqual(self.view.sessions, {})
 
     async def test_signature_encoding_aliases_cannot_bypass_revocation(self):
         raw = self.sign()

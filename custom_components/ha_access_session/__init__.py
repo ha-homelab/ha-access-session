@@ -1,4 +1,4 @@
-"""YAML setup for the HA Access Session beta integration."""
+"""YAML setup for the HA Access Session integration."""
 
 import re
 import time

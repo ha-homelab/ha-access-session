@@ -29,6 +29,19 @@ jobs:
         run: |
           uv pip install --system -r requirements-dev.lock
           go mod download
+      - name: Install isolated Home Assistant runtime
+        run: |
+          uv venv --python "$(command -v python3)" .ha-test
+          uv pip install --python .ha-test/bin/python3 'homeassistant==2026.10.0'
       - name: Validate source and behavior
+        env:
+          HA_PYTHON: ${{ github.workspace }}/.ha-test/bin/python3
         run: |
           sh scripts/check.sh
+      - name: Validate packaged Home Assistant integration
+        run: |
+          sh scripts/build.sh
+          stage="$RUNNER_TEMP/ha-access-session-canary"
+          mkdir -p "$stage"
+          python3 -m zipfile -e "dist/ha-access-session-$(cat version).zip" "$stage"
+          .ha-test/bin/python3 -I tests/real_ha_lifecycle.py --component-root "$stage"

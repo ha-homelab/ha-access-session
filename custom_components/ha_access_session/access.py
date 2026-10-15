@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 from aiohttp import ClientError, ClientTimeout, web
 import jwt
 from homeassistant.components.http import HomeAssistantView
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later
 
@@ -213,7 +214,8 @@ class AccessSessions(HomeAssistantView):
 
     def expire(self, key):
         session = self.sessions.pop(key, None)
-        self.timers.pop(key, None)
+        if cancel := self.timers.pop(key, None):
+            cancel()
         if session:
             self.hass.auth.async_remove_refresh_token(session)
 
@@ -288,10 +290,17 @@ class AccessSessions(HomeAssistantView):
                     access_token_expiration=timedelta(seconds=config.token_lifetime_seconds),
                 )
                 self.sessions[key] = session
+
+                @callback
+                def expire_session(_):
+                    # HA dispatches undecorated synchronous listeners to its
+                    # executor. Auth removal and this state belong to the loop.
+                    self.expire(key)
+
                 self.timers[key] = async_call_later(
                     self.hass,
                     max(0, claims["exp"] - time.time()),
-                    lambda _: self.expire(key),
+                    expire_session,
                 )
             elif session.id not in user.refresh_tokens:
                 self.expire(key)

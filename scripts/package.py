@@ -26,6 +26,13 @@ root_files = {
     "requirements-dev.lock",
     ".gitignore",
 }
+distribution_root_files = {
+    "LICENSE",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "RELEASING.md",
+    ".release-policy.json",
+}
 source_dirs = {
     "custom_components",
     "gateway",
@@ -67,8 +74,8 @@ def archive_tar(destination, entries):
 integration = [
     p
     for p in files
-    if p.relative_to(root).parts[0] in {"custom_components", "licenses", "docs"}
-    or p.name in {"LICENSE", "README.md", "THIRD_PARTY_NOTICES.md"}
+    if p.relative_to(root).parts[0] in {"custom_components", "licenses", "docs", "examples"}
+    or p.relative_to(root).as_posix() in distribution_root_files
 ]
 with zipfile.ZipFile(
     dist / f"ha-access-session-{version}.zip", "w", compression=zipfile.ZIP_DEFLATED
@@ -93,7 +100,7 @@ for architecture in ("amd64", "arm64"):
         (p.relative_to(root).as_posix(), p, False)
         for p in files
         if p.relative_to(root).parts[0] in {"licenses", "docs", "examples"}
-        or p.name in {"README.md", "LICENSE", "THIRD_PARTY_NOTICES.md"}
+        or p.relative_to(root).as_posix() in distribution_root_files
     ]
     archive_tar(dist / f"ha-access-gateway-{version}-linux-{architecture}.tar.gz", entries)
 archives = sorted(p for p in dist.iterdir() if p.suffix in {".gz", ".zip"} and version in p.name)
