@@ -476,3 +476,53 @@ func TestOptionalHALoginPreservesCredentialsWithoutForwardingAccessIdentity(t *t
 		t.Fatalf("unexpected backend calls: %d", hits.Load())
 	}
 }
+
+func TestAuthenticatedCrossSiteDocumentNavigation(t *testing.T) {
+	var hits atomic.Int32
+	g, k := fixture(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { hits.Add(1) }))
+	raw := signed(t, k, claimsMap())
+	headers := map[string]string{"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document"}
+	if w := invoke(g, "GET", "/", raw, headers); w.Code != http.StatusOK || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") {
+		t.Fatalf("authenticated document navigation failed: %d", w.Code)
+	}
+	if w := invoke(g, "GET", "/", "", headers); w.Code != http.StatusUnauthorized {
+		t.Fatalf("navigation bypassed assertion requirement: %d", w.Code)
+	}
+	other := claimsMap()
+	other["email"] = "other@example.invalid"
+	if w := invoke(g, "GET", "/", signed(t, k, other), headers); w.Code != http.StatusForbidden {
+		t.Fatalf("navigation bypassed identity mapping: %d", w.Code)
+	}
+	for _, tc := range []struct{ method, path, mode, destination, origin string }{
+		{"POST", "/", "navigate", "document", ""},
+		{"GET", "/session", "navigate", "document", ""},
+		{"POST", "/session/ha", "navigate", "document", config().Origin},
+		{"GET", "/api/websocket", "websocket", "empty", config().Origin},
+		{"GET", "/app.js", "navigate", "document", ""},
+		{"GET", "/", "cors", "document", ""},
+		{"GET", "/", "navigate", "iframe", ""},
+		{"GET", "/", "navigate", "document", "https://other.example.invalid"},
+	} {
+		h := map[string]string{"Sec-Fetch-Site": "cross-site", "Sec-Fetch-Mode": tc.mode, "Sec-Fetch-Dest": tc.destination}
+		if tc.origin != "" {
+			h["Origin"] = tc.origin
+		}
+		if w := invoke(g, tc.method, tc.path, raw, h); w.Code != http.StatusForbidden {
+			t.Errorf("cross-site request accepted: %s %s %s %s: %d", tc.method, tc.path, tc.mode, tc.destination, w.Code)
+		}
+	}
+	r := httptest.NewRequest("GET", config().Origin+"/", nil)
+	r.Header.Set(AssertionHeader, raw)
+	for name, value := range headers {
+		r.Header.Set(name, value)
+	}
+	r.Header.Add("Sec-Fetch-Mode", "cors")
+	w := httptest.NewRecorder()
+	g.ServeHTTP(w, r)
+	if w.Code != http.StatusForbidden {
+		t.Fatal("ambiguous navigation metadata accepted")
+	}
+	if hits.Load() != 0 {
+		t.Fatal("navigation forwarded a request to Home Assistant")
+	}
+}

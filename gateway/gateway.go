@@ -345,7 +345,15 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	origins := r.Header.Values("Origin")
-	if len(origins) > 1 || (len(origins) == 1 && origins[0] != g.config.Origin) || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+	// A link or identity-provider redirect may navigate from another site to
+	// the dashboard. Only the top-level HTML entry point gets this exception;
+	// it still requires the signed, mapped assertion below. API calls, embeds
+	// and writes retain the cross-site rejection.
+	modes, destinations := r.Header.Values("Sec-Fetch-Mode"), r.Header.Values("Sec-Fetch-Dest")
+	documentNavigation := r.Method == http.MethodGet && r.URL.Path == "/" &&
+		len(modes) == 1 && modes[0] == "navigate" && len(destinations) == 1 && destinations[0] == "document"
+	if len(origins) > 1 || (len(origins) == 1 && origins[0] != g.config.Origin) ||
+		(r.Header.Get("Sec-Fetch-Site") == "cross-site" && !documentNavigation) {
 		http.Error(w, "unrecognized origin", 403)
 		return
 	}
