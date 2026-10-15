@@ -25,19 +25,22 @@
       {
         "path": "version",
         "format": "text",
-        "value": "package"
+        "value": "package",
+        "ecosystem": "pep440"
       },
       {
         "path": "pyproject.toml",
         "format": "toml",
         "field": "project.version",
-        "value": "package"
+        "value": "package",
+        "ecosystem": "pep440"
       },
       {
         "path": "custom_components/ha_access_session/manifest.json",
         "format": "json",
         "field": "version",
-        "value": "package"
+        "value": "package",
+        "ecosystem": "pep440"
       }
     ],
     "artifacts": [
@@ -46,7 +49,8 @@
         "format": "zip-json",
         "member": "custom_components/ha_access_session/manifest.json",
         "field": "version",
-        "value": "package"
+        "value": "package",
+        "ecosystem": "pep440"
       }
     ],
     "toolkit_revision": "ece79d1b1ca40d3068d373e515daf58115489a22"

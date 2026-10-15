@@ -1,6 +1,6 @@
 [project]
 name = "ha-access-session"
-version = "0.1.0b1"
+version = "0.1.0"
 description = "Beta signed Access to Home Assistant session boundary"
 requires-python = ">=3.13"
 license = "MIT"
