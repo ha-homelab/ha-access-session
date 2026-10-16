@@ -58,6 +58,20 @@ files = sorted(
 )
 
 
+# Include only reproducible browser-toolchain manifests, never installed npm caches.
+files = sorted(
+    set(files)
+    | {
+        p
+        for p in root.glob("tools/browser-compatibility/playwright-*/package*.json")
+        if p.is_file()
+        and not p.is_symlink()
+        and not any(parent.is_symlink() for parent in p.parents if parent.is_relative_to(root))
+        and p.name in {"package.json", "package-lock.json"}
+    }
+)
+
+
 def archive_tar(destination, entries):
     with destination.open("wb") as raw:
         with gzip.GzipFile(fileobj=raw, filename="", mode="wb", mtime=0) as compressed:

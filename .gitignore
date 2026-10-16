@@ -6,3 +6,6 @@ dist/
 .coverage
 .ruff_cache/
 .DS_Store
+
+.compatibility/
+node_modules/

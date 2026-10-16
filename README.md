@@ -50,6 +50,9 @@ See [installation and upgrade](docs/installation.md), [configuration and operati
 ## Demo and your own frontend
 
 The gateway embeds a synthetic demo that requires Access like all other assets. **Preview session** is entirely local and makes no HA call. **Create real session** explicitly invokes the configured exchange; it does not call devices and keeps the returned token only in memory. The demo displays synthetic labels, never the configured user's identity or token.
+A newer action or page exit invalidates pending browser responses, so a late
+exchange cannot restore a revoked credential. [Browser acceptance](docs/browser-compatibility.md)
+checks this behavior across the supported browser matrix.
 
 To preview the visual without any authentication system, serve only the synthetic files:
 

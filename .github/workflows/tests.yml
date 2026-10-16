@@ -4,6 +4,19 @@ on:
 permissions:
   contents: read
 jobs:
+  browser-compatibility:
+    name: Session demo browser acceptance
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/typescript-ci.yml@eb1ec3a1b978923955c77b478c9a2530846d6bae
+    permissions:
+      contents: read
+    with:
+      node-version: '22'
+      run-node-ci: false
+      browser-matrix-file: .github/browser-compatibility.json
+      browser-prepare-command: node --check gateway/web/app.js && node --check scripts/browser-acceptance.cjs
+      browser-test-command: node scripts/browser-acceptance.cjs
+      browser-extended: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.channel == '' || github.event.inputs.channel == 'rc')) }}
+      browser-release-channel: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || '' }}
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
