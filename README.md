@@ -1,5 +1,7 @@
 # HA Access Session
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15589/badge)](https://www.bestpractices.dev/projects/15589)
+
 **Contract v1 · one explicitly mapped Home Assistant administrator.**
 
 Exchange a verified Cloudflare Access application JWT for a short-lived Home Assistant access token. A small Go gateway protects your static dashboard, independently verifies the same identity, and exposes only the session exchange and HA WebSocket routes. No long-lived HA token belongs in your frontend, container environment, or gateway configuration.
