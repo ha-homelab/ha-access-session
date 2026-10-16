@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Enforce the same RSA 2048 signing-key floor in the Go and Python verifiers.
+- Check exact certificate-key sizes throughout owned HTTPS client chains before HTTP; reject weak configured gateway TLS certificates before opening a listener.
+- Add an optional native HTTPS gateway listener with `-tls-cert` and `-tls-key`. Existing HTTP behind a trusted edge remains a compatibility option.
+- Require Go 1.27.2 for new builds and document private reporting, contribution tests and maintenance continuity limits.
+
+
 ## [0.1.0] - Initial public release
 
 - Extract the signed Access-to-HA session boundary into a reusable standalone integration and Go gateway.

@@ -42,3 +42,5 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+The exact TLS key-size policy and certificate test fixtures are adapted from [4alvit/google-home-voice-stats](https://github.com/4alvit/google-home-voice-stats/tree/5b0baec1a3c7db3e4d5854e7461e1bae9028cc11), copyright 2026 victron-venus, under the MIT license retained in licenses/google-home-voice-stats-LICENSE.

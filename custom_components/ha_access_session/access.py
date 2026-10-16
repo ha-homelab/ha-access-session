@@ -9,6 +9,7 @@ from datetime import timedelta
 from hashlib import sha256
 import json
 import re
+import ssl
 import time
 from urllib.parse import urlsplit
 
@@ -18,6 +19,8 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later
+
+from .tls_policy import enforce_peer_key_policy
 
 HEADER = "Cf-Access-Jwt-Assertion"
 SESSION_PATH = "/api/ha_access_session/v1/session"
@@ -125,6 +128,8 @@ class AccessSessions(HomeAssistantView):
             raise ValueError("Client ID must belong to the configured origin")
         self.persist = persist
         self.lock = asyncio.Lock()
+        # A dedicated context avoids weakening Home Assistant's shared session.
+        self.jwks_tls = enforce_peer_key_policy(ssl.create_default_context())
         self.keys, self.fetched = {}, 0
         self.sessions = {}
         self.tombstones = dict(tombstones or {})
@@ -158,6 +163,7 @@ class AccessSessions(HomeAssistantView):
                 self.config.issuer + "/cdn-cgi/access/certs",
                 timeout=ClientTimeout(total=5),
                 allow_redirects=False,
+                ssl=self.jwks_tls,
             ) as response:
                 if response.status != 200:
                     raise web.HTTPServiceUnavailable(text="Identity verification unavailable")

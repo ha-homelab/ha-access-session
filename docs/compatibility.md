@@ -17,7 +17,7 @@ The canary checks that:
 
 This check reproduced a pre-release defect: an undecorated timer listener ran refresh-token removal in an executor thread and raised a thread-safety error during HA's storage scheduling. The listener now runs as an HA callback on the event loop. Mock-only tests had not detected this. The owned `Offline contract tests` workflow now requires the canary for both source and the built integration ZIP on Python 3.14, within its 15-minute job limit. It installs Home Assistant 2026.10.0 in a separate `.ha-test` virtual environment so the development lock cannot override HA's dependency constraints.
 
-The ordinary suite independently tests real RSA/JWT verification, mocked HA edge cases and loopback Go HTTP/WebSocket behavior, including origin/path/header restrictions, revocation, bounded connections and key-service failures. Run it with race detection and vet through `scripts/check.sh`. The review used Go 1.27.1; the module's declared minimum remains in `go.mod`.
+The ordinary suite independently tests real RSA/JWT verification, mocked HA edge cases and loopback Go HTTP/WebSocket behavior, including origin/path/header restrictions, revocation, bounded connections and key-service failures. Run it with race detection and vet through `scripts/check.sh`. The current minimum and qualified toolchain is Go 1.27.2, as declared in `go.mod`.
 
 No live Cloudflare SSO, public reverse proxy, production HA deployment, physical device, HA OS add-on packaging or complete optional HA OAuth fallback was qualified by these checks. No compatibility range beyond the named HA version is claimed. The project is a custom integration plus a standalone Linux gateway, not an HA-endorsed integration or an independently certified security product.
 
