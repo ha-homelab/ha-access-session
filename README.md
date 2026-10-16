@@ -1,5 +1,7 @@
 # HA Access Session
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15589/badge)](https://www.bestpractices.dev/projects/15589)
+
 **Contract v1 · one explicitly mapped Home Assistant administrator.**
 
 Exchange a verified Cloudflare Access application JWT for a short-lived Home Assistant access token. A small Go gateway protects your static dashboard, independently verifies the same identity, and exposes only the session exchange and HA WebSocket routes. No long-lived HA token belongs in your frontend, container environment, or gateway configuration.
@@ -68,7 +70,7 @@ A frontend should POST the empty exchange, hold `access_token` only in memory, a
 
 ## Develop and package
 
-Requires Python 3.13+ and Go 1.26+. Dependency installation may access package registries; tests and builds below need no external service once dependencies are cached.
+Requires Python 3.13+ and Go 1.27.2+. Dependency installation may access package registries; tests and builds below need no external service once dependencies are cached.
 
 ```sh
 python3 -m venv .venv
@@ -85,3 +87,7 @@ Tests cover signature/issuer/audience/time validation, exact network opt-in, for
 ## References
 
 Cloudflare documents the [application assertion and signature validation](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/application-token/). HA documents its [authentication API](https://developers.home-assistant.io/docs/auth_api/). This project adds its own versioned exchange and relies on internal HA auth methods; it is not endorsed by either project. Dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Maintenance and transport security
+
+See [contribution requirements](CONTRIBUTING.md), [conduct reporting](CODE_OF_CONDUCT.md), [governance and continuity](GOVERNANCE.md), [roadmap](ROADMAP.md), the [HTTPS/key policy](docs/tls-policy.md), and [dated quality evidence](docs/quality.md). Source changes require relevant regression tests and actual current-revision checks.

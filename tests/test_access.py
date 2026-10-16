@@ -33,12 +33,17 @@ sys.modules["homeassistant.helpers.aiohttp_client"].async_get_clientsession = (
 sys.modules["homeassistant.helpers.event"].async_call_later = (
     lambda hass, seconds, cb: hass.timers.append((seconds, cb))
 )
+fixture_package = ModuleType("access_fixture")
+fixture_package.__path__ = [
+    str(Path(__file__).resolve().parents[1] / "custom_components/ha_access_session")
+]
+sys.modules["access_fixture"] = fixture_package
 spec = importlib.util.spec_from_file_location(
-    "access",
+    "access_fixture.access",
     Path(__file__).resolve().parents[1] / "custom_components/ha_access_session/access.py",
 )
 access = importlib.util.module_from_spec(spec)
-sys.modules["access"] = access
+sys.modules[spec.name] = access
 spec.loader.exec_module(access)
 KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 CONFIG = {
@@ -352,6 +357,7 @@ class AccessTest(unittest.IsolatedAsyncioTestCase):
             (CONFIG["issuer"] + "/cdn-cgi/access/certs",),
         )
         self.assertFalse(self.hass.http_client.get.call_args.kwargs["allow_redirects"])
+        self.assertIs(self.hass.http_client.get.call_args.kwargs["ssl"], self.view.jwks_tls)
         for _ in range(3):
             with self.assertRaises(web.HTTPUnauthorized):
                 await self.view.post(self.request(self.sign()))

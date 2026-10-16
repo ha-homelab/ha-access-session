@@ -17,6 +17,10 @@ root_files = {
     "CHANGELOG.md",
     "SECURITY.md",
     "RELEASING.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "GOVERNANCE.md",
+    "ROADMAP.md",
     ".release-policy.json",
     "version",
     "go.mod",
@@ -31,6 +35,10 @@ distribution_root_files = {
     "README.md",
     "THIRD_PARTY_NOTICES.md",
     "RELEASING.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "GOVERNANCE.md",
+    "ROADMAP.md",
     ".release-policy.json",
 }
 source_dirs = {

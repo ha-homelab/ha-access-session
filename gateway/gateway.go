@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -61,27 +60,13 @@ func New(ctx context.Context, config Config) (*Gateway, error) {
 	if err := config.normalize(); err != nil {
 		return nil, err
 	}
-	client := &http.Client{Timeout: 5 * time.Second, Transport: boundedTransport{http.DefaultTransport},
+	client := &http.Client{Timeout: 5 * time.Second, Transport: keySetTransport{secureTransport()},
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 	ctx = oidc.ClientContext(ctx, client)
 	keys := oidc.NewRemoteKeySet(ctx, config.Issuer+"/cdn-cgi/access/certs")
 	verifier := oidc.NewVerifier(config.Issuer, keys, &oidc.Config{ClientID: config.Audience,
 		SupportedSigningAlgs: []string{oidc.RS256}})
 	return newWithVerifier(config, verifier)
-}
-
-type boundedTransport struct{ inner http.RoundTripper }
-type limitedBody struct {
-	io.Reader
-	io.Closer
-}
-
-func (t boundedTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	response, err := t.inner.RoundTrip(r)
-	if err == nil {
-		response.Body = limitedBody{io.LimitReader(response.Body, 65537), response.Body}
-	}
-	return response, err
 }
 
 func loadFiles(dir string, provided ...fs.FS) (map[string][]byte, error) {
@@ -153,6 +138,7 @@ func newWithVerifier(c Config, verifier *oidc.IDTokenVerifier) (*Gateway, error)
 	g := &Gateway{config: c, verifier: verifier, files: files, host: public.Host,
 		revoked: make(map[string]time.Time), active: make(map[string]*active)}
 	g.proxy = &httputil.ReverseProxy{
+		Transport: secureTransport(),
 		Rewrite: func(p *httputil.ProxyRequest) {
 			p.SetURL(upstream)
 			p.Out.Host = g.host

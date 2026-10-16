@@ -43,4 +43,8 @@ Durable tombstones contain only assertion SHA-256 hashes and expiries. They do n
 
 ## Reporting
 
-Do not include JWTs, cookies, HA tokens, real identities, internal addresses, or home configuration in public issues. Use GitHub's private vulnerability reporting mechanism when available, or request a private reporting channel without publishing exploit details. For non-sensitive bugs, a synthetic configuration and failing isolated test are ideal.
+Do not include JWTs, cookies, HA tokens, real identities, internal addresses, or home configuration in public issues. Use [GitHub private vulnerability reporting](https://github.com/ha-homelab/ha-access-session/security/advisories/new) or alvit.work@gmail.com. For non-sensitive bugs, a synthetic configuration and failing isolated test are ideal.
+
+## Transport and signing-key enforcement
+
+Both verifiers accept RS256 signing keys only when the RSA modulus is at least 2048 bits. The Go issuer transport filters keys before go-oidc caches them. Owned HTTPS clients perform normal certificate/hostname verification and then require a complete verified chain, including its root, to meet the exact key-size minimum. Go may accept any fully strong verified alternative chain. See [the supported transport profile](tls-policy.md). This does not change the trust granted to the configured issuer or administrator.
