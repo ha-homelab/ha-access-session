@@ -27,6 +27,13 @@ class PackageTest(unittest.TestCase):
                 ".release-policy.json",
                 *(path.name for path in source.glob("*.md")),
             ]
+            toolchain_manifests = {
+                path.relative_to(source).as_posix()
+                for path in source.glob("tools/browser-compatibility/playwright-*/package*.json")
+                if path.name in {"package.json", "package-lock.json"}
+            }
+            self.assertEqual(len(toolchain_manifests), 6)
+            files.extend(sorted(toolchain_manifests))
             for name in files:
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -37,6 +44,14 @@ class PackageTest(unittest.TestCase):
                     root / folder,
                     ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
                 )
+            toolchain = root / "tools/browser-compatibility/playwright-1-64-0"
+            (toolchain / "node_modules/playwright").mkdir(parents=True)
+            (toolchain / "node_modules/playwright/package.json").write_text("{}")
+            (toolchain / "package-private.json").write_text("{}")
+            alias = root / "toolchain-alias"
+            alias.mkdir()
+            (alias / "package.json").write_text("{}")
+            (toolchain.parent / "playwright-linked").symlink_to(alias, target_is_directory=True)
             (root / "dist/bin").mkdir(parents=True)
             for architecture in ("amd64", "arm64"):
                 (root / "dist/bin" / f"ha-access-gateway-linux-{architecture}").write_bytes(
@@ -68,6 +83,14 @@ class PackageTest(unittest.TestCase):
                 )
             for path in sorted((root / "dist").glob("*.tar.gz")):
                 with tarfile.open(path) as archive:
+                    if path.name.endswith("-source.tar.gz"):
+                        prefix = f"ha-access-session-{version}/"
+                        packaged_toolchains = {
+                            name.removeprefix(prefix)
+                            for name in archive.getnames()
+                            if name.startswith(prefix + "tools/")
+                        }
+                        self.assertEqual(packaged_toolchains, toolchain_manifests)
                     self.assert_documentation_links(
                         path.name,
                         set(archive.getnames()),
