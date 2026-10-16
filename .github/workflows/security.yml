@@ -11,7 +11,7 @@ jobs:
       actions: read
       security-events: write
     with:
-      languages: python,go
+      languages: python,javascript,go
       run-codeql: true
       run-trivy: true
       run-dependency-review: true

@@ -89,9 +89,8 @@ def make_chains(directory: Path) -> dict[str, tuple[Path, Path, Path]]:
     for case in CHAIN_CASES:
         root_bits = {"weak-root": 1024, "weak-2047-root": 2047}.get(case, 2048)
         root_key: Key
-        if case in ("strong-ec", "weak-ec-root"):
-            curve = ec.SECP192R1() if case == "weak-ec-root" else ec.SECP256R1()
-            root_key = ec.generate_private_key(curve)
+        if case == "strong-ec":
+            root_key = ec.generate_private_key(ec.SECP256R1())
         else:
             root_key = rsa.generate_private_key(65537, root_bits)
         root = certificate(root_key, case, None, root_key, ca=True)
