@@ -112,6 +112,10 @@ GitHub releases do not deploy production. Existing push/tag/CI deployment hooks
 must be migrated or disabled before enabling automatic prereleases. Container
 and PyPI publication use verified stable assets as a separate explicit operation.
 
+## Qualified GitHub CLI
+
+Release jobs install and check the exact native GitHub CLI before GitHub API operations. For local use, follow [the supported CLI installation and TLS profile](release-github-cli.md).
+
 ## Project limits and rollout requirements
 
 - Examples and screenshots are synthetic. Site configuration, credentials, real observations and private Git history are excluded.
