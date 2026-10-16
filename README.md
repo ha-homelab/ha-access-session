@@ -88,4 +88,4 @@ Cloudflare documents the [application assertion and signature validation](https:
 
 ## Maintenance and transport security
 
-See [contribution requirements](CONTRIBUTING.md), [conduct reporting](CODE_OF_CONDUCT.md), [governance and continuity](GOVERNANCE.md), [roadmap](ROADMAP.md), and the [HTTPS/key policy](docs/tls-policy.md). Source changes require relevant regression tests and actual current-revision checks.
+See [contribution requirements](CONTRIBUTING.md), [conduct reporting](CODE_OF_CONDUCT.md), [governance and continuity](GOVERNANCE.md), [roadmap](ROADMAP.md), the [HTTPS/key policy](docs/tls-policy.md), and [dated quality evidence](docs/quality.md). Source changes require relevant regression tests and actual current-revision checks.

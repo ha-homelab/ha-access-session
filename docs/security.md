@@ -47,4 +47,4 @@ Do not include JWTs, cookies, HA tokens, real identities, internal addresses, or
 
 ## Transport and signing-key enforcement
 
-Both verifiers accept RS256 signing keys only when the RSA modulus is at least 2048 bits. The Go issuer transport filters keys before go-oidc caches them. Owned HTTPS clients perform normal certificate/hostname verification and then check every certificate in the verified chain, including roots, against the exact key-size minimum. See [the supported transport profile](tls-policy.md). This does not change the trust granted to the configured issuer or administrator.
+Both verifiers accept RS256 signing keys only when the RSA modulus is at least 2048 bits. The Go issuer transport filters keys before go-oidc caches them. Owned HTTPS clients perform normal certificate/hostname verification and then require a complete verified chain, including its root, to meet the exact key-size minimum. Go may accept any fully strong verified alternative chain. See [the supported transport profile](tls-policy.md). This does not change the trust granted to the configured issuer or administrator.
