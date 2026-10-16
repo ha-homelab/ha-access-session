@@ -59,7 +59,10 @@ tested one-week access-recovery arrangement.
 The [transport policy](tls-policy.md) documents owned HTTPS enforcement and an
 explicit HTTP compatibility mode. External Cloudflare, browser, HA HTTPS-server
 and TLS-terminator configuration still need the installation acceptance checks.
-The pinned generated release-signing and GitHub clients also need their current
-complete dependency/TLS qualification; the runtime audits above do not cover
-those binaries. Until these boundaries are qualified, do not claim complete
-deployment or release-tool cryptographic readiness.
+The generated workflow now selects the exact qualified [signer and GitHub CLI
+profiles](release-tls-profile.md), whose separate documentation records real TLS
+and signature tests plus dated, command-specific dependency assessments. The
+runtime audits above do not cover those binaries or arbitrary external-tool
+features. This release-client qualification does not replace the external
+installation acceptance checks or establish a complete current OS/runtime
+dependency inventory.

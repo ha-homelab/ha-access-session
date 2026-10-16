@@ -53,8 +53,8 @@
         "ecosystem": "pep440"
       }
     ],
-    "toolkit_revision": "ece79d1b1ca40d3068d373e515daf58115489a22"
+    "toolkit_revision": "f0bf0ec4921619f0de09ecd3eaa5e8673e4f9695"
   },
-  "toolkit_revision": "ece79d1b1ca40d3068d373e515daf58115489a22",
+  "toolkit_revision": "f0bf0ec4921619f0de09ecd3eaa5e8673e4f9695",
   "sign_releases": true
 }
