@@ -8,8 +8,8 @@ elif [ -x .venv/bin/python3 ]; then
 else
     python_bin=python3
 fi
-"$python_bin" -m ruff check custom_components tests scripts/check_version.py scripts/package.py
-"$python_bin" -m ruff format --check custom_components tests scripts/check_version.py scripts/package.py
+"$python_bin" -m ruff check custom_components tests scripts/check_version.py scripts/package.py scripts/smoke_gateway_artifact.py
+"$python_bin" -m ruff format --check custom_components tests scripts/check_version.py scripts/package.py scripts/smoke_gateway_artifact.py
 "$python_bin" -m unittest discover -s tests -v
 "$python_bin" scripts/check_version.py
 if [ -n "${HA_PYTHON:-}" ]; then

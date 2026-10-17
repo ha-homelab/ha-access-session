@@ -1,12 +1,22 @@
 # Changelog
 
-## Unreleased
+## [0.1.1] - 2026-10-17
 
-- Enforce the same RSA 2048 signing-key floor in the Go and Python verifiers.
-- Check exact certificate-key sizes throughout owned HTTPS client chains before HTTP; reject weak configured gateway TLS certificates before opening a listener.
-- Add an optional native HTTPS gateway listener with `-tls-cert` and `-tls-key`. Existing HTTP behind a trusted edge remains a compatibility option.
-- Require Go 1.27.2 for new builds and document private reporting, contribution tests and maintenance continuity limits.
+### Changed
 
+- Require native Linux amd64 and arm64 smoke checks of the exact staged gateway archives, with source-bound hash receipts, before release publication.
+
+- Prevent stale session replies from undoing revocation.
+- Align RSA signing-key strength checks across Go and Python verifiers and require Go 1.27.2 for new builds.
+- Add an optional native HTTPS gateway listener and use qualified canonical clients for signed release publication.
+
+### Upgrade
+
+Update the integration and gateway together from the verified release. Existing HTTP behind a trusted edge remains available; native HTTPS requires explicitly supplied certificate and key files. Review configured signing and TLS keys against the documented minimum sizes. Preserve private configuration and the previous matching pair for rollback.
+
+### Security
+
+Owned HTTPS clients verify exact certificate-key sizes before HTTP requests. Weak configured gateway certificates are rejected before opening a listener, and signing keys must meet the shared RSA-2048 floor. Loopback and synthetic Home Assistant tests do not replace live identity-provider or installation qualification.
 
 ## [0.1.0] - Initial public release
 
