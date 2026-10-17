@@ -1,7 +1,7 @@
 {
   "domain": "ha_access_session",
   "name": "HA Access Session",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "documentation": "https://github.com/ha-homelab/ha-access-session",
   "issue_tracker": "https://github.com/ha-homelab/ha-access-session/issues",
   "codeowners": [],
