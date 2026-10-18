@@ -4,6 +4,21 @@
 
 - Add a default-off canonical media-player artwork GET route with separate HA bearer authentication, same-origin request checks, a 10-second ceiling and unconditional redirect rejection. Existing Access admission, identity mapping and revocation checks remain required.
 
+## [0.1.2] - 2026-10-18
+
+### Changed
+
+- Restore Dependabot approval automation by routing default-branch dependency PR metadata through the trusted target workflow. Trusted-author, draft and opt-in label checks remain enforced; the approval job does not execute PR code.
+- Synchronize package version fields for this CI maintenance release.
+
+### Upgrade
+
+Update the integration and gateway together from the verified release. Retain private trust and TLS configuration and the previous matching pair for rollback.
+
+### Security
+
+Revocation freshness, replay protection and signing-key floors remain in force. Offline qualification does not establish acceptance by a live identity provider.
+
 ## [0.1.1] - 2026-10-17
 
 ### Changed
