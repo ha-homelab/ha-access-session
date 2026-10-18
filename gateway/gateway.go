@@ -42,7 +42,7 @@ type active struct {
 	cancels map[uint64]context.CancelFunc
 }
 
-// Gateway admits only signed identities, static files and two fixed HA routes.
+// Gateway admits only signed identities, static files and explicit HA routes.
 type Gateway struct {
 	config   Config
 	verifier *oidc.IDTokenVerifier
@@ -171,7 +171,7 @@ func newWithVerifier(c Config, verifier *oidc.IDTokenVerifier) (*Gateway, error)
 				location, err := url.Parse(r.Header.Get("Location"))
 				// Only an explicitly enabled OAuth callback may redirect, to
 				// this exact public origin. No external token destination.
-				if !c.EnableHALogin || err != nil || location.Scheme != "https" || location.Host != g.host || location.Path != "/" || !validCallback(location.Query()) {
+				if mediaArtworkPath.MatchString(r.Request.URL.Path) || !c.EnableHALogin || err != nil || location.Scheme != "https" || location.Host != g.host || location.Path != "/" || !validCallback(location.Query()) {
 					return errors.New("upstream redirects are forbidden")
 				}
 			}
@@ -409,7 +409,8 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	websocket := r.URL.Path == "/api/websocket" && r.Method == "GET" && r.URL.RawQuery == "" &&
 		strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
 	login := g.config.EnableHALogin && g.loginRoute(r)
-	if (!exchange && !websocket && !login) || ((exchange || websocket || r.Method == "POST") && len(origins) != 1) {
+	artwork := g.config.EnableMediaArtwork && mediaArtworkRoute(r)
+	if (!exchange && !websocket && !login && !artwork) || ((exchange || websocket || r.Method == "POST") && len(origins) != 1) {
 		http.NotFound(w, r)
 		return
 	}
@@ -417,6 +418,11 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 65536)
 	}
 	deadline := time.Now().Add(g.config.connectionLifetime())
+	if artwork {
+		if artworkDeadline := time.Now().Add(mediaArtworkTimeout); artworkDeadline.Before(deadline) {
+			deadline = artworkDeadline
+		}
+	}
 	if token.Expiry.Before(deadline) {
 		deadline = token.Expiry
 	}

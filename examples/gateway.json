@@ -6,6 +6,7 @@
   "upstream": "https://ha.example.invalid",
   "allow_insecure_upstream": false,
   "allow_trusted_network": false,
+  "enable_media_artwork": false,
   "max_assertion_lifetime_seconds": 86400,
   "max_connection_seconds": 300
 }

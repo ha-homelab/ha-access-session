@@ -26,6 +26,8 @@ type Config struct {
 	StaticDir             string `json:"static_dir"`
 	// Default-off compatibility with the normal HA OAuth login UI.
 	EnableHALogin bool `json:"enable_ha_login"`
+	// Default-off authenticated reads of canonical HA media-player artwork.
+	EnableMediaArtwork bool `json:"enable_media_artwork"`
 	// Trusted embed.FS adapter input, never configurable by an HTTP request.
 	StaticFS              fs.FS  `json:"-"`
 	ContentSecurityPolicy string `json:"content_security_policy"`
