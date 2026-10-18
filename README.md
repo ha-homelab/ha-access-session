@@ -36,6 +36,8 @@ The two components ship together under one version and [contract](docs/contract-
 
 An optional, default-off HA OAuth compatibility policy is documented in [operations](docs/operations.md#optional-ha-login-compatibility) for existing dashboards. It is separate from the mapped v1 exchange.
 
+Dashboards that display media-player artwork can separately opt into `enable_media_artwork: true`. This enables only authenticated `GET /api/media_player_proxy/media_player.<object_id>` reads, with canonical lowercase IDs, no query or body, a 10-second deadline, and no redirects. It requires both the verified Access assertion and an HA bearer token; HA still decides whether that token may read the image. See [artwork configuration](docs/operations.md#optional-media-player-artwork) for the browser request and origin rules.
+
 `GET /session` returns the verified assertion expiry. Static assets require a verified assertion. `GET /healthz` returns an empty public liveness response and never contacts HA.
 
 ## Install

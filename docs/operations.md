@@ -26,7 +26,7 @@ Gateway `upstream` is a single origin, with no path/user information/query/fragm
 
 **502/503:** check gateway-to-HA connectivity, server certificate trust, key-service availability and HA storage permissions. The service deliberately rejects redirects at both the key-fetch and proxy boundaries. Fix the configured final endpoint rather than weakening verification.
 
-**404 on a REST API, `/auth/*`, or a query-string asset:** expected under v1's route contract. Use the explicit exchange and HA WebSocket. Query-based cache busting is unsupported; use content-hashed asset filenames if needed.
+**404 on a REST API, `/auth/*`, or a query-string asset:** expected under v1's default route contract. Use the explicit exchange and HA WebSocket. The optional artwork and HA login routes below require separate configuration. Query-based cache busting is unsupported; use content-hashed asset filenames if needed.
 
 **WebSocket reconnects:** expected at the configured maximum connection age, even if the Access session lasts longer. Obtain/reuse an unexpired short token through the exchange and reconnect. The demo does not perform device operations or open a WebSocket.
 
@@ -37,6 +37,18 @@ Follow the [staged upgrade and rollback procedure](installation.md#upgrade-and-r
 Install matching component versions and retain HA's revocation storage across updates. Keep issuer/origin/client ID stable. Before changing the origin or removing the integration, revoke its managed `HA Access Session` refresh tokens in the HA profile or an administrator-controlled HA maintenance procedure. Stop the gateway before changing trust settings. Removing a component or changing the client ID cannot retroactively discover tokens stored under a former client ID.
 
 Do not configure request/response logging to capture assertion headers, HA token bodies or WebSocket authentication messages. Gateway error logs intentionally contain no request URLs, claims, tokens or backend bodies. Synthetic examples are suitable for bug reports after confirming they contain no real configuration.
+
+## Optional media-player artwork
+
+`enable_media_artwork` defaults false in the gateway JSON. Embedded Go consumers may set `Config.EnableMediaArtwork: true`. The CLI reads trusted JSON configuration; it has no environment-variable configuration layer. A consuming application may explicitly map its own administrator setting to this field.
+
+When enabled, the gateway accepts only `GET /api/media_player_proxy/media_player.<object_id>`, where the object ID has 1–137 lowercase ASCII letters, digits or underscores. Encoded path aliases, trailing slashes, other entity domains, query strings (including a bare `?`), request bodies and other methods are rejected. The endpoint always belongs to the configured HA upstream; the caller cannot supply a remote image URL.
+
+Send exactly one `Authorization: Bearer <access_token>` header. The token must use bearer-token characters and is bounded to 8,192 characters, including at most two trailing padding characters. The gateway does not replace HA's token validation. The existing signed Access assertion, identity mapping and revocation checks apply as well. No token belongs in the image URL. Use authenticated `fetch`, then the frontend's bounded image-decoding pipeline, rather than an unauthenticated `<img src>` request.
+
+A supplied `Origin` must match the configured public origin exactly. If it is absent, the request must have `Sec-Fetch-Site: same-origin`, as ordinary same-origin browser fetches do. If Fetch Metadata is supplied, only one `same-origin` value is accepted, even when `Origin` is present. A legacy client without Fetch Metadata must supply the exact Origin; JavaScript should not attempt to set browser-controlled headers. Cross-site and same-site requests from another origin are rejected.
+
+Artwork forwards only the existing `Authorization`, `Content-Type` and `Accept` header allowlist and the gateway's configured Origin. Access assertions, cookies, forwarded identities and range headers are not passed to the artwork endpoint. Responses retain `no-store` and the common cookie/CORS stripping. Every upstream 3xx is rejected with 502, including same-origin OAuth callbacks when `enable_ha_login` is enabled. Requests expire after at most 10 seconds, or sooner at assertion expiry, the configured connection deadline or same-process session revocation. Frontends remain responsible for image byte, decoded-pixel and MIME limits; this route streams HA's response and is not an image sanitizer.
 
 ## Optional HA login compatibility
 

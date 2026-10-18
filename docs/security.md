@@ -8,6 +8,12 @@ The adversary may send direct requests to the gateway or HA, forge unsigned head
 
 HA's refresh token stays server-side and only a bounded access token reaches the browser. Requests cannot pick an account, scope, redirect or token destination. The gateway forwards assertions exclusively to the configured session endpoint. By default it exposes neither arbitrary REST APIs nor `/auth/*`; HA's WebSocket still enforces its own credential checks. Upstream redirects and cookies are blocked. Exchange state is bounded and serialized. Storage failure fails closed before issuing a token.
 
+## Optional artwork boundary
+
+The gateway's `enable_media_artwork` setting is default-off and independent of HA login compatibility. Enabling it admits only bodyless, queryless GETs to canonical `/api/media_player_proxy/media_player.<object_id>` paths with a bounded lowercase ASCII object ID and exactly one bounded Bearer authorization header. The signed Access assertion and mapped identity are still required, and HA independently authenticates and authorizes the bearer token. The route is not scoped to a frontend's saved inventory; any canonical media-player ID remains subject to that HA user's permissions. It grants no arbitrary URL, entity domain, REST endpoint or write method.
+
+The exact configured Origin is required when supplied. Requests without it need `Sec-Fetch-Site: same-origin`; duplicate or other Fetch Metadata values are rejected. These browser request checks supplement credentials and are not authentication for non-browser clients. Only existing allowlisted HA request headers are forwarded; the assertion and proxy identity headers are stripped. All artwork redirects are rejected, including the otherwise permitted same-origin OAuth callback. The maximum request lifetime is 10 seconds, further limited by the assertion and connection deadlines, with in-flight cancellation on same-process session revocation. Responses are not cached by the gateway and have cookies/CORS headers stripped. The gateway streams HA's bytes; the frontend must bound downloads and decoded image dimensions and accept only its supported image formats.
+
 ## Explicit trusted-network admission
 
 `allow_trusted_network: false` is the default in **both** components. Turning it on accepts a valid issuer-signed `type: app` assertion with an empty subject and absent email/common_name. It **maps this anonymous network assertion to the same full HA administrator**. There is no per-person attribution.
