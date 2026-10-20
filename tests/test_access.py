@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
 from aiohttp import web
-from aiohttp.test_utils import make_mocked_request
+from aiohttp.test_utils import TestServer, make_mocked_request
 from cryptography.hazmat.primitives.asymmetric import rsa
 import jwt
 
@@ -55,7 +55,7 @@ CONFIG = {
 }
 
 
-class AccessTest(unittest.IsolatedAsyncioTestCase):
+class AccessFixture:
     def setUp(self):
         self.user = SimpleNamespace(
             is_admin=True,
@@ -114,6 +114,8 @@ class AccessTest(unittest.IsolatedAsyncioTestCase):
             },
         )
 
+
+class AccessTest(AccessFixture, unittest.IsolatedAsyncioTestCase):
     async def test_signed_owner_concurrency_bounded_token_no_refresh_disclosure(self):
         raw = self.sign()
         responses = await asyncio.gather(*(self.view.post(self.request(raw)) for _ in range(8)))
@@ -375,6 +377,210 @@ class AccessTest(unittest.IsolatedAsyncioTestCase):
         response.content.iter_chunked = huge
         with self.assertRaises(web.HTTPUnauthorized):
             await self.view.post(self.request(raw))
+
+
+class AccessBodyHTTPTest(AccessFixture, unittest.IsolatedAsyncioTestCase):
+    """Real HTTP streams: mocks cannot establish chunk framing or EOF timing."""
+
+    async def asyncSetUp(self):
+        self.entered = asyncio.Event()
+        self.finished = asyncio.Queue()
+
+        async def endpoint(request):
+            self.entered.set()
+            try:
+                response = await self.view.post(request)
+            except web.HTTPException as exc:
+                self.finished.put_nowait(exc.status)
+                raise
+            except asyncio.CancelledError:
+                self.finished.put_nowait("cancelled")
+                raise
+            self.finished.put_nowait(response.status)
+            return response
+
+        app = web.Application()
+        app.router.add_route("*", access.SESSION_PATH, endpoint)
+        self.server = TestServer(app, host="127.0.0.1")
+        await self.server.start_server()
+        self.addAsyncCleanup(self.server.close)
+
+    async def open_request(self, framing, *, headers=None, method="POST", query=""):
+        self.entered.clear()
+        reader, writer = await asyncio.open_connection("127.0.0.1", self.server.port)
+
+        async def close():
+            writer.close()
+            await writer.wait_closed()
+
+        self.addAsyncCleanup(close)
+        request_headers = {
+            "Host": "dashboard.example.invalid",
+            "Origin": CONFIG["origin"],
+            access.HEADER: self.sign(),
+            "Connection": "close",
+            **(headers or {}),
+        }
+        raw = f"{method} {access.SESSION_PATH}{query} HTTP/1.1\r\n"
+        raw += "".join(f"{key}: {value}\r\n" for key, value in request_headers.items())
+        writer.write((raw + framing + "\r\n").encode("ascii"))
+        await writer.drain()
+        # Do not send the terminal chunk until the real request handler has
+        # started, reproducing the false-positive can_read_body condition.
+        await asyncio.wait_for(self.entered.wait(), 1)
+        return reader, writer
+
+    async def response(self, reader):
+        async with asyncio.timeout(4):
+            head = await reader.readuntil(b"\r\n\r\n")
+            status = int(head.split(b" ", 2)[1])
+            headers = dict(
+                line.lower().split(b": ", 1) for line in head.split(b"\r\n")[1:] if b": " in line
+            )
+            body = await reader.readexactly(int(headers.get(b"content-length", b"0")))
+        return status, body
+
+    def assert_no_identity_work(self):
+        self.auth.async_get_user.assert_not_awaited()
+        self.auth.async_create_refresh_token.assert_not_awaited()
+        self.auth.async_create_access_token.assert_not_called()
+        self.persist.assert_not_awaited()
+        self.assertEqual(self.view.sessions, {})
+        self.assertEqual(self.view.tombstones, {})
+
+    async def test_empty_content_length_and_delayed_chunked_issue_bounded_session(self):
+        for framing, tail in (
+            ("Content-Length: 0\r\n", b""),
+            ("", b""),
+            ("Transfer-Encoding: chunked\r\n", b"0\r\n\r\n"),
+        ):
+            with self.subTest(framing=framing):
+                reader, writer = await self.open_request(framing)
+                if tail:
+                    writer.write(tail)
+                    await writer.drain()
+                status, body = await self.response(reader)
+                self.assertEqual(status, 200)
+                result = json.loads(body)
+                self.assertEqual(result["access_token"], "synthetic-token")
+                self.assertEqual(result["contract_version"], 1)
+                self.assertLessEqual(result["expires_in"], 300)
+                self.assertNotIn("refresh_token", result)
+
+    async def test_delayed_empty_chunked_revoke_keeps_tombstone(self):
+        raw = self.sign()
+        reader, writer = await self.open_request(
+            "Transfer-Encoding: chunked\r\n",
+            query="?revoke=1",
+            headers={access.HEADER: raw},
+        )
+        writer.write(b"0\r\n\r\n")
+        await writer.drain()
+        self.assertEqual((await self.response(reader))[0], 204)
+        reader, _ = await self.open_request("Content-Length: 0\r\n", headers={access.HEADER: raw})
+        self.assertEqual((await self.response(reader))[0], 401)
+        self.persist.assert_awaited_once()
+        self.auth.async_create_refresh_token.assert_not_awaited()
+
+    async def test_nonempty_content_length_and_chunked_rejected_before_identity(self):
+        self.view.verify = AsyncMock()
+        for framing, tail in (
+            ("Content-Length: 1\r\n", b"x"),
+            # No terminal chunk: reject after one decoded byte without draining.
+            ("Transfer-Encoding: chunked\r\n", b"1\r\nx\r\n"),
+        ):
+            with self.subTest(framing=framing):
+                reader, writer = await self.open_request(framing)
+                writer.write(tail)
+                await writer.drain()
+                status, body = await self.response(reader)
+                self.assertEqual(status, 400)
+                self.assertIn(b"Expected an empty version 1 session request", body)
+        self.view.verify.assert_not_awaited()
+        self.assert_no_identity_work()
+
+    async def test_unfinished_chunked_body_times_out_before_identity(self):
+        self.view.verify = AsyncMock()
+        started = asyncio.get_running_loop().time()
+        reader, _ = await self.open_request("Transfer-Encoding: chunked\r\n")
+        status, _ = await self.response(reader)
+        elapsed = asyncio.get_running_loop().time() - started
+        self.assertEqual(status, 408)
+        self.assertGreaterEqual(elapsed, access.SESSION_BODY_TIMEOUT_SECONDS)
+        self.assertLess(elapsed, 4)
+        self.view.verify.assert_not_awaited()
+        self.assert_no_identity_work()
+
+    async def test_invalid_chunk_framing_cannot_bypass_body_deadline(self):
+        self.view.verify = AsyncMock()
+        reader, writer = await self.open_request("Transfer-Encoding: chunked\r\n")
+        writer.write(b"not-hex\r\n")
+        await writer.drain()
+        # aiohttp's C parser queues its 400 behind this active request instead
+        # of delivering the framing error to the payload reader.
+        self.assertEqual((await self.response(reader))[0], 408)
+        self.view.verify.assert_not_awaited()
+        self.assert_no_identity_work()
+
+    async def test_payload_decoding_error_is_400_before_identity(self):
+        self.view.verify = AsyncMock()
+        reader, writer = await self.open_request(
+            "Content-Length: 8\r\n", headers={"Content-Encoding": "gzip"}
+        )
+        # aiohttp also logs this expected decode error when releasing the
+        # rejected request's remaining payload.
+        with self.assertLogs("aiohttp.server", level="ERROR"):
+            writer.write(b"not-gzip")
+            await writer.drain()
+            self.assertEqual((await self.response(reader))[0], 400)
+        self.view.verify.assert_not_awaited()
+        self.assert_no_identity_work()
+
+    async def test_disconnected_body_fails_without_identity(self):
+        self.view.verify = AsyncMock()
+        _, writer = await self.open_request("Transfer-Encoding: chunked\r\n")
+        writer.close()
+        await writer.wait_closed()
+        # TestServer cancels in-flight handlers on disconnect. Cancellation
+        # must propagate instead of being converted to a successful empty read.
+        self.assertEqual(await asyncio.wait_for(self.finished.get(), 1), "cancelled")
+        self.view.verify.assert_not_awaited()
+        self.assert_no_identity_work()
+
+    async def test_origin_method_and_query_reject_before_waiting_for_body(self):
+        self.view.verify = AsyncMock()
+        for options, expected in (
+            ({"headers": {"Origin": "https://other.example.invalid"}}, 403),
+            ({"headers": {"Host": "other.example.invalid"}}, 403),
+            ({"headers": {"Sec-Fetch-Site": "cross-site"}}, 403),
+            ({"method": "PUT"}, 400),
+            ({"query": "?user_id=attacker"}, 400),
+        ):
+            with self.subTest(options=options):
+                reader, _ = await self.open_request("Transfer-Encoding: chunked\r\n", **options)
+                # No body or terminal chunk is supplied; these gates are first.
+                status, _ = await asyncio.wait_for(self.response(reader), 1)
+                self.assertEqual(status, expected)
+        self.view.verify.assert_not_awaited()
+        self.assert_no_identity_work()
+
+    async def test_empty_chunked_preserves_assertion_and_mapped_account_checks(self):
+        for raw in ("", "invalid", self.sign(self.claims(email="other@example.invalid"))):
+            with self.subTest(raw=raw[:8]):
+                reader, writer = await self.open_request(
+                    "Transfer-Encoding: chunked\r\n", headers={access.HEADER: raw}
+                )
+                writer.write(b"0\r\n\r\n")
+                await writer.drain()
+                self.assertEqual((await self.response(reader))[0], 401)
+        self.assert_no_identity_work()
+        self.user.is_admin = False
+        reader, writer = await self.open_request("Transfer-Encoding: chunked\r\n")
+        writer.write(b"0\r\n\r\n")
+        await writer.drain()
+        self.assertEqual((await self.response(reader))[0], 403)
+        self.auth.async_create_refresh_token.assert_not_awaited()
+        self.persist.assert_not_awaited()
 
 
 class ConfigurationTest(unittest.TestCase):

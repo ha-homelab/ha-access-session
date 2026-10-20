@@ -20,6 +20,14 @@ The gateway rejects noncanonical/encoded paths, unapproved methods, unexpected q
 
 `POST /session/ha`, empty body. The gateway strips credentials and identity headers, then forwards only the verified assertion and configured origin to `POST /api/ha_access_session/v1/session`. HA verifies the signature again and checks the configured account is active, an administrator, not local-only and not system-generated.
 
+Empty means zero decoded body bytes, including when HTTP/1 uses chunked framing or
+HTTP/2 does not supply a content length. Each component reads at most one byte and
+waits at most two seconds for EOF. A byte or read failure is rejected with 400; a
+body that does not finish within the deadline is rejected with 408. The gateway
+rejects trailers and forwards a verified empty body with a zero content length.
+This normalization applies only to the session exchange and revoke endpoint.
+Origin, assertion and account validation remain required.
+
 A successful JSON response has `contract_version: 1`, `access_token` (opaque string), `expires_in` (integer, 1–300), `session_expires_at` (JWT expiry as Unix seconds). Every response is `Cache-Control: no-store`. The lifetime is the lesser of the configured token lifetime and remaining assertion lifetime minus one second. A refresh credential never leaves HA.
 
 HA keys sessions by SHA-256 of the full assertion, serializes creation, caps active/unexpired used assertions at 32 by default (configurable 1–128), and persists an expiry tombstone before issuing a token. Repeated calls with the same active assertion reuse its server-held refresh token. HA validates that the refresh token still belongs to the configured account before reissue.
@@ -34,4 +42,4 @@ Every proxied connection is capped at the earlier of assertion expiry or `max_co
 
 ## Errors
 
-401: absent/invalid assertion, expired or revoked session. 403: unmapped identity/account, host/origin mismatch. 400: malformed direct HA exchange. 404: gateway route/method/query not allowed. 429: bounded session capacity exhausted. 503: HA key service or durable storage unavailable. 502: gateway upstream unavailable or redirect rejected. These do not reveal tokens, claims, user IDs or backend response bodies in gateway logs.
+401: absent/invalid assertion, expired or revoked session. 403: unmapped identity/account, host/origin mismatch. 400: malformed exchange body or direct HA exchange. 404: gateway route/method/query not allowed. 408: exchange body did not finish within its deadline. 429: bounded session capacity exhausted. 503: HA key service or durable storage unavailable. 502: gateway upstream unavailable or redirect rejected. These do not reveal tokens, claims, user IDs or backend response bodies in gateway logs.

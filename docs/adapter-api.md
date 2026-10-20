@@ -44,6 +44,12 @@ handler, err := gateway.New(ctx, gateway.Config{
 
 Import `github.com/ha-homelab/ha-access-session/gateway` at the exact release tag. `Gateway` implements `http.Handler`. `New` validates configuration and loads static files before returning; it does not contact the issuer or HA until an actual signed request. Use an HTTP server with header timeouts and bounded header size, as in `cmd/ha-access-gateway/main.go`.
 
+Session requests with a body stream require read-deadline support through
+`http.ResponseController`. Middleware that wraps `http.ResponseWriter` must
+provide `Unwrap() http.ResponseWriter` or forward `SetReadDeadline`. If that
+support is unavailable, the gateway returns 500 instead of performing an
+unbounded read. The standard HTTP/1 and HTTP/2 server writers support this check.
+
 The public browser routes remain `/session/ha`, `/session`, and `/api/websocket`, regardless of the private HA adapter route. Do not widen proxy routing to preserve unrelated private frontend behavior; migrate that frontend explicitly to the v1 contract. Keep a dependency pin and a synthetic boundary test in the consuming project.
 
 For an existing embedded frontend, set `StaticFS` to a rooted `fs.FS` (for example an `embed.FS` subdirectory). Do not also set `StaticDir`. `EnableHALogin: true` opts into the bounded HA OAuth compatibility routes documented in operations. `ContentSecurityPolicy` is an administrator-controlled override for trusted legacy frontends that need frames or inline scripts; it is unnecessary for the public demo. Neither option changes the independently verified v1 exchange.

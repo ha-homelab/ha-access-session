@@ -405,7 +405,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	exchange := r.URL.Path == "/session/ha" && r.Method == "POST" &&
-		(r.URL.RawQuery == "" || r.URL.RawQuery == "revoke=1") && r.ContentLength == 0 && len(r.TransferEncoding) == 0
+		(r.URL.RawQuery == "" || r.URL.RawQuery == "revoke=1")
 	websocket := r.URL.Path == "/api/websocket" && r.Method == "GET" && r.URL.RawQuery == "" &&
 		strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
 	login := g.config.EnableHALogin && g.loginRoute(r)
@@ -439,5 +439,8 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer unregister()
+	if exchange && !normalizeSessionBody(ctx, w, r) {
+		return
+	}
 	g.proxy.ServeHTTP(w, r.WithContext(ctx))
 }
