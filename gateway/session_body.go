@@ -11,6 +11,16 @@ import (
 
 const sessionBodyTimeout = 2 * time.Second
 
+// stopSessionBody also applies to denials before authentication or body
+// validation. net/http may otherwise drain an unfinished body before sending
+// the response. An HTTP/2 deadline affects this stream, not other requests.
+func stopSessionBody(w http.ResponseWriter, r *http.Request) {
+	_ = http.NewResponseController(w).SetReadDeadline(time.Now())
+	if r.ProtoMajor == 1 {
+		w.Header().Set("Connection", "close")
+	}
+}
+
 // normalizeSessionBody accepts an empty decoded stream, including unknown-length
 // HTTP/2 and chunked HTTP/1 requests. Framing alone cannot establish emptiness.
 // Call only for an authenticated, allowed session exchange, never an OAuth POST.
@@ -19,10 +29,7 @@ func normalizeSessionBody(ctx context.Context, w http.ResponseWriter, r *http.Re
 	reject := func(status int) bool {
 		// A peer may stop sending after its first rejected byte. Abort any
 		// remaining read/drain instead of retaining the connection indefinitely.
-		_ = controller.SetReadDeadline(time.Now())
-		if r.ProtoMajor == 1 {
-			w.Header().Set("Connection", "close")
-		}
+		stopSessionBody(w, r)
 		http.Error(w, http.StatusText(status), status)
 		return false
 	}

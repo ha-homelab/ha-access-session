@@ -1,9 +1,20 @@
 # Changelog
 
-## Unreleased
+## [0.1.3] - Unreleased
 
+### Changed
+
+- Abort unfinished `/session/ha` request bodies when host, origin, identity or route checks reject the request. HTTP/1 denials close the connection without waiting for a body drain; HTTP/2 denials leave other streams usable. Existing denial statuses and authentication order are preserved.
 - Accept genuinely empty session requests with chunked HTTP/1 framing or an unknown HTTP/2 content length. Both the gateway and HA adapter now verify the decoded body with a one-byte read and a two-second deadline; nonempty bodies, read failures and stalled requests remain rejected. The gateway normalizes verified empty requests before proxying them to HA.
 - Add a default-off canonical media-player artwork GET route with separate HA bearer authentication, same-origin request checks, a 10-second ceiling and unconditional redirect rejection. Existing Access admission, identity mapping and revocation checks remain required.
+
+### Upgrade
+
+Update the gateway and integration together from the verified candidate. Keep the existing issuer, origin, account mapping and TLS configuration, and retain the previous matching pair for rollback. The request format and stored session data do not change.
+
+### Security
+
+Rejected session requests no longer hold an HTTP/1 connection waiting for an unfinished body. Signed identity, origin, revocation and route checks remain required, with the same denial statuses. Keep the origin restricted to the trusted edge; local protocol and lifecycle tests do not replace acceptance of the selected release on its intended targets.
 
 ## [0.1.2] - 2026-10-18
 

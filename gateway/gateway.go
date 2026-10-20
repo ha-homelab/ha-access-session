@@ -317,6 +317,12 @@ func validNotBefore(raw json.RawMessage, now int64) bool {
 }
 
 func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	deny := func(message string, status int) {
+		if r.URL.Path == "/session/ha" {
+			stopSessionBody(w, r)
+		}
+		http.Error(w, message, status)
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Referrer-Policy", "no-referrer")
@@ -327,7 +333,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Host != g.host {
-		http.Error(w, "unrecognized host", 403)
+		deny("unrecognized host", 403)
 		return
 	}
 	origins := r.Header.Values("Origin")
@@ -340,25 +346,25 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		len(modes) == 1 && modes[0] == "navigate" && len(destinations) == 1 && destinations[0] == "document"
 	if len(origins) > 1 || (len(origins) == 1 && origins[0] != g.config.Origin) ||
 		(r.Header.Get("Sec-Fetch-Site") == "cross-site" && !documentNavigation) {
-		http.Error(w, "unrecognized origin", 403)
+		deny("unrecognized origin", 403)
 		return
 	}
 	if path.Clean(r.URL.Path) != r.URL.Path || strings.Contains(r.URL.Path, "\\") || r.URL.EscapedPath() != r.URL.Path {
-		http.NotFound(w, r)
+		deny("404 page not found", http.StatusNotFound)
 		return
 	}
 	assertions := r.Header.Values(AssertionHeader)
 	if len(assertions) != 1 || len(assertions[0]) == 0 || len(assertions[0]) > 16384 {
-		http.Error(w, "signed Access assertion required", 401)
+		deny("signed Access assertion required", 401)
 		return
 	}
 	if !validProtectedHeader(assertions[0]) {
-		http.Error(w, "invalid protected header", 401)
+		deny("invalid protected header", 401)
 		return
 	}
 	token, err := g.verifier.Verify(r.Context(), assertions[0])
 	if err != nil {
-		http.Error(w, "invalid Access assertion", 401)
+		deny("invalid Access assertion", 401)
 		return
 	}
 	var c claims
@@ -366,19 +372,19 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if token.Claims(&c) != nil || c.Subject == nil || c.Type != "app" || c.IssuedAt <= 0 || c.IssuedAt > now ||
 		c.Expires <= now || c.Expires-c.IssuedAt <= 0 || c.Expires-c.IssuedAt > int64(g.config.MaxAssertionLifetimeSeconds) ||
 		!validNotBefore(c.NotBefore, now) {
-		http.Error(w, "invalid Access claims", 401)
+		deny("invalid Access claims", 401)
 		return
 	}
 	network := g.config.AllowTrustedNetwork && *c.Subject == "" && len(c.Email) == 0 && len(c.CommonName) == 0
 	var email string
 	owner := *c.Subject != "" && len(c.CommonName) == 0 && json.Unmarshal(c.Email, &email) == nil && email == g.config.Email
 	if !network && !owner {
-		http.Error(w, "Access identity not mapped", 403)
+		deny("Access identity not mapped", 403)
 		return
 	}
 	key := hash(assertions[0])
 	if g.isRevoked(key) {
-		http.Error(w, "session revoked", 401)
+		deny("session revoked", 401)
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/session" && r.URL.RawQuery == "" {
@@ -411,7 +417,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	login := g.config.EnableHALogin && g.loginRoute(r)
 	artwork := g.config.EnableMediaArtwork && mediaArtworkRoute(r)
 	if (!exchange && !websocket && !login && !artwork) || ((exchange || websocket || r.Method == "POST") && len(origins) != 1) {
-		http.NotFound(w, r)
+		deny("404 page not found", http.StatusNotFound)
 		return
 	}
 	if login && r.Method == "POST" {
@@ -435,7 +441,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	unregister, ok := g.register(key, token.Expiry, trackingCancel)
 	if !ok {
-		http.Error(w, "session limit or revocation", 429)
+		deny("session limit or revocation", 429)
 		return
 	}
 	defer unregister()

@@ -27,6 +27,10 @@ body that does not finish within the deadline is rejected with 408. The gateway
 rejects trailers and forwards a verified empty body with a zero content length.
 This normalization applies only to the session exchange and revoke endpoint.
 Origin, assertion and account validation remain required.
+If the gateway rejects `/session/ha` during those earlier checks, it aborts the
+unread body before sending the existing denial status. HTTP/1 closes the
+connection; HTTP/2 leaves other streams on the connection usable. A denied
+request does not wait for the body-validation timeout.
 
 A successful JSON response has `contract_version: 1`, `access_token` (opaque string), `expires_in` (integer, 1–300), `session_expires_at` (JWT expiry as Unix seconds). Every response is `Cache-Control: no-store`. The lifetime is the lesser of the configured token lifetime and remaining assertion lifetime minus one second. A refresh credential never leaves HA.
 

@@ -12,7 +12,10 @@ Session bodies must contain zero decoded bytes. Transfer framing alone does not
 establish whether a body is empty: both components allow at most a one-byte read
 and two seconds to verify EOF, rejecting a byte, read failure or timeout. The
 gateway rejects trailers and normalizes the body only after this check succeeds.
-Rejected gateway requests cannot leave an unbounded body drain on the connection.
+Rejected `/session/ha` requests cannot leave an unbounded body drain on the
+connection, including when host, origin, identity or route checks reject the
+request before body validation. HTTP/1 closes that connection; HTTP/2 cancels
+only the rejected body read so other streams remain usable.
 The check does not extend the route allowlist or replace either verifier's origin,
 assertion, account or revocation checks.
 
