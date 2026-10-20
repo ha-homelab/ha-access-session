@@ -16,6 +16,13 @@ Host must match the configured HTTPS origin host, including any explicit port. A
 
 The gateway rejects noncanonical/encoded paths, unapproved methods, unexpected query parameters and nonempty exchange bodies. The HA integration independently rejects nonempty exchange bodies and any query except one `revoke=1`. Static assets and `/session` have no query parameters in v1.
 
+GET and HEAD requests must have zero content length, no transfer encoding and no
+trailers. Positive or unknown lengths and trailer declarations are rejected with
+400 before authentication, local responses or proxying, including `/healthz`,
+`/session`, static files and the WebSocket handshake. The gateway aborts the
+unread body as for other admission denials. Ordinary bodyless HTTP/1 and HTTP/2
+requests remain supported. This rule does not apply to OAuth POST payloads.
+
 ## Exchange
 
 `POST /session/ha`, empty body. The gateway strips credentials and identity headers, then forwards only the verified assertion and configured origin to `POST /api/ha_access_session/v1/session`. HA verifies the signature again and checks the configured account is active, an administrator, not local-only and not system-generated.
@@ -27,6 +34,11 @@ body that does not finish within the deadline is rejected with 408. The gateway
 rejects trailers and forwards a verified empty body with a zero content length.
 This normalization applies only to the session exchange and revoke endpoint.
 Origin, assertion and account validation remain required.
+If a gateway admission check rejects a request, it aborts the unread body before
+sending the existing denial status. This also covers unknown paths and disabled
+routes. HTTP/1 closes the connection; HTTP/2 leaves other streams on the
+connection usable. An admission denial does not wait for the body-validation
+timeout.
 
 A successful JSON response has `contract_version: 1`, `access_token` (opaque string), `expires_in` (integer, 1–300), `session_expires_at` (JWT expiry as Unix seconds). Every response is `Cache-Control: no-store`. The lifetime is the lesser of the configured token lifetime and remaining assertion lifetime minus one second. A refresh credential never leaves HA.
 
@@ -42,4 +54,4 @@ Every proxied connection is capped at the earlier of assertion expiry or `max_co
 
 ## Errors
 
-401: absent/invalid assertion, expired or revoked session. 403: unmapped identity/account, host/origin mismatch. 400: malformed exchange body or direct HA exchange. 404: gateway route/method/query not allowed. 408: exchange body did not finish within its deadline. 429: bounded session capacity exhausted. 503: HA key service or durable storage unavailable. 502: gateway upstream unavailable or redirect rejected. These do not reveal tokens, claims, user IDs or backend response bodies in gateway logs.
+401: absent/invalid assertion, expired or revoked session. 403: unmapped identity/account, host/origin mismatch. 400: malformed exchange body, body framing on GET/HEAD or direct HA exchange. 404: gateway route/method/query not allowed. 408: exchange body did not finish within its deadline. 429: bounded session capacity exhausted. 503: HA key service or durable storage unavailable. 502: gateway upstream unavailable or redirect rejected. These do not reveal tokens, claims, user IDs or backend response bodies in gateway logs.

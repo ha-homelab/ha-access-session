@@ -12,7 +12,15 @@ Session bodies must contain zero decoded bytes. Transfer framing alone does not
 establish whether a body is empty: both components allow at most a one-byte read
 and two seconds to verify EOF, rejecting a byte, read failure or timeout. The
 gateway rejects trailers and normalizes the body only after this check succeeds.
-Rejected gateway requests cannot leave an unbounded body drain on the connection.
+Gateway admission denials cannot leave an unbounded body drain on the
+connection: host, origin, identity and route checks abort the unread body on
+rejection, including unknown paths and disabled OAuth/artwork routes. HTTP/1
+closes that connection; HTTP/2 cancels only the rejected body read so other
+streams remain usable.
+GET/HEAD requests with positive or unknown content length, transfer encoding or
+trailers are rejected with 400 before local or proxy responses, so even an
+unauthenticated health check cannot retain a connection through an ignored body.
+Ordinary bodyless GET/HEAD requests and accepted OAuth POST payloads are unchanged.
 The check does not extend the route allowlist or replace either verifier's origin,
 assertion, account or revocation checks.
 
