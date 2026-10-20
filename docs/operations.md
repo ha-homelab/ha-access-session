@@ -30,6 +30,28 @@ Gateway `upstream` is a single origin, with no path/user information/query/fragm
 
 **WebSocket reconnects:** expected at the configured maximum connection age, even if the Access session lasts longer. Obtain/reuse an unexpired short token through the exchange and reconnect. The demo does not perform device operations or open a WebSocket.
 
+## Startup diagnostics
+
+Pass `--tls-cert` and `--tls-key` together. The CLI rejects an unmatched flag
+before reading configuration or constructing the gateway. `--version` still
+prints the version without requiring configuration or TLS files.
+
+Configuration startup errors include a fixed category, without printing the
+configuration path, JSON field names or values:
+
+- `not_found`: the configuration file could not be found.
+- `permission_denied`: the operating system denied access to the file.
+- `open_failed`: another file-opening error occurred.
+- `invalid_json`: the first JSON value could not be decoded into the gateway
+  configuration, including unknown fields or incorrect value types.
+- `trailing_data`: additional data follows the configuration value. Keep one
+  JSON object; trailing whitespace is allowed.
+
+Check file availability and permissions using the gateway's service account.
+Inspect malformed configuration locally; do not paste private paths, fields or
+values into logs or issue reports. These categories do not replace the existing
+semantic configuration checks performed before a listener starts.
+
 ## Updates and removal
 
 Follow the [staged upgrade and rollback procedure](installation.md#upgrade-and-rollback). HA configuration reload alone is not an integration upgrade; restart HA after replacing the files. The expected reauthentication after that restart is part of the replay-prevention policy.

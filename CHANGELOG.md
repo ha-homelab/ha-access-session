@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Report fixed, redacted categories for configuration file and JSON startup errors. Reject an unmatched TLS certificate/key flag before configuration access while preserving `--version` behavior.
 - Abort unfinished request bodies when gateway host, origin, identity or route checks reject the request, including unknown paths and disabled OAuth/artwork routes. HTTP/1 denials close the connection without waiting for a body drain; HTTP/2 denials leave other streams usable. Existing denial statuses and authentication order are preserved.
 - Reject GET/HEAD requests with a positive or unknown content length, transfer encoding or trailers with 400 before local responses or proxying. This prevents ignored bodies from delaying health, session, static and WebSocket responses. Ordinary bodyless requests and accepted OAuth POST payloads retain their existing behavior.
 - Accept genuinely empty session requests with chunked HTTP/1 framing or an unknown HTTP/2 content length. Both the gateway and HA adapter now verify the decoded body with a one-byte read and a two-second deadline; nonempty bodies, read failures and stalled requests remain rejected. The gateway normalizes verified empty requests before proxying them to HA.

@@ -30,19 +30,13 @@ func main() {
 		fmt.Println(version)
 		return
 	}
-	file, err := os.Open(*filename)
+	if (*certificate == "") != (*privateKey == "") {
+		log.Fatal("both tls-cert and tls-key are required")
+	}
+	config, err := loadConfiguration(*filename)
 	if err != nil {
-		log.Fatal("cannot open gateway configuration")
+		log.Fatal(err)
 	}
-	var config gateway.Config
-	decoder := json.NewDecoder(io.LimitReader(file, 65537))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&config)
-	var extra any
-	if err != nil || decoder.Decode(&extra) != io.EOF {
-		log.Fatal("invalid gateway configuration")
-	}
-	_ = file.Close()
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 	handler, err := gateway.New(ctx, config)
@@ -51,9 +45,6 @@ func main() {
 	}
 	server := &http.Server{Addr: *listen, Handler: handler, ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32768}
-	if (*certificate == "") != (*privateKey == "") {
-		log.Fatal("both tls-cert and tls-key are required")
-	}
 	if *certificate != "" {
 		server.TLSConfig, err = gateway.ServerTLSConfig(*certificate, *privateKey)
 		if err != nil {
@@ -75,4 +66,34 @@ func main() {
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal("gateway listener failed")
 	}
+}
+
+// Keep startup diagnostics useful without printing paths, JSON fields or values.
+func configurationOpenError(err error) error {
+	category := "open_failed"
+	if errors.Is(err, os.ErrNotExist) {
+		category = "not_found"
+	} else if errors.Is(err, os.ErrPermission) {
+		category = "permission_denied"
+	}
+	return fmt.Errorf("cannot open gateway configuration (%s)", category)
+}
+
+func loadConfiguration(filename string) (gateway.Config, error) {
+	var config gateway.Config
+	file, err := os.Open(filename)
+	if err != nil {
+		return config, configurationOpenError(err)
+	}
+	defer file.Close()
+	decoder := json.NewDecoder(io.LimitReader(file, 65537))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&config); err != nil {
+		return config, errors.New("invalid gateway configuration (invalid_json)")
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return config, errors.New("invalid gateway configuration (trailing_data)")
+	}
+	return config, nil
 }
