@@ -8,6 +8,14 @@ The adversary may send direct requests to the gateway or HA, forge unsigned head
 
 HA's refresh token stays server-side and only a bounded access token reaches the browser. Requests cannot pick an account, scope, redirect or token destination. The gateway forwards assertions exclusively to the configured session endpoint. By default it exposes neither arbitrary REST APIs nor `/auth/*`; HA's WebSocket still enforces its own credential checks. Upstream redirects and cookies are blocked. Exchange state is bounded and serialized. Storage failure fails closed before issuing a token.
 
+Session bodies must contain zero decoded bytes. Transfer framing alone does not
+establish whether a body is empty: both components allow at most a one-byte read
+and two seconds to verify EOF, rejecting a byte, read failure or timeout. The
+gateway rejects trailers and normalizes the body only after this check succeeds.
+Rejected gateway requests cannot leave an unbounded body drain on the connection.
+The check does not extend the route allowlist or replace either verifier's origin,
+assertion, account or revocation checks.
+
 ## Optional artwork boundary
 
 The gateway's `enable_media_artwork` setting is default-off and independent of HA login compatibility. Enabling it admits only bodyless, queryless GETs to canonical `/api/media_player_proxy/media_player.<object_id>` paths with a bounded lowercase ASCII object ID and exactly one bounded Bearer authorization header. The signed Access assertion and mapped identity are still required, and HA independently authenticates and authorizes the bearer token. The route is not scoped to a frontend's saved inventory; any canonical media-player ID remains subject to that HA user's permissions. It grants no arbitrary URL, entity domain, REST endpoint or write method.

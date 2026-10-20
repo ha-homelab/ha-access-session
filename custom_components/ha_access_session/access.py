@@ -14,6 +14,7 @@ import time
 from urllib.parse import urlsplit
 
 from aiohttp import ClientError, ClientTimeout, web
+from aiohttp.web_protocol import RequestPayloadError
 import jwt
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import callback
@@ -25,6 +26,9 @@ from .tls_policy import enforce_peer_key_policy
 HEADER = "Cf-Access-Jwt-Assertion"
 SESSION_PATH = "/api/ha_access_session/v1/session"
 CONTRACT_VERSION = 1
+# Empty requests need only reach EOF; do not let an unfinished body hold a
+# request open indefinitely before identity verification.
+SESSION_BODY_TIMEOUT_SECONDS = 2
 
 
 def https_origin(value):
@@ -244,11 +248,18 @@ class AccessSessions(HomeAssistantView):
             or request.headers.get("Sec-Fetch-Site") == "cross-site"
         ):
             raise web.HTTPForbidden()
-        if (
-            request.method != "POST"
-            or request.can_read_body
-            or list(request.query.items()) not in ([], [("revoke", "1")])
-        ):
+        if request.method != "POST" or list(request.query.items()) not in ([], [("revoke", "1")]):
+            raise web.HTTPBadRequest(text="Expected an empty version 1 session request")
+        try:
+            # can_read_body indicates an unfinished stream, not a nonempty
+            # payload. A zero-length chunked request may still be awaiting EOF.
+            async with asyncio.timeout(SESSION_BODY_TIMEOUT_SECONDS):
+                first_byte = await request.content.read(1)
+        except TimeoutError:
+            raise web.HTTPRequestTimeout(text="Session request body did not finish") from None
+        except (ClientError, OSError, RequestPayloadError):
+            raise web.HTTPBadRequest(text="Invalid session request body") from None
+        if first_byte:
             raise web.HTTPBadRequest(text="Expected an empty version 1 session request")
         assertions = request.headers.getall(HEADER, [])
         if len(assertions) != 1 or not 0 < len(assertions[0]) <= 16384:

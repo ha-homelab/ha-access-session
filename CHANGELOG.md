@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Accept genuinely empty session requests with chunked HTTP/1 framing or an unknown HTTP/2 content length. Both the gateway and HA adapter now verify the decoded body with a one-byte read and a two-second deadline; nonempty bodies, read failures and stalled requests remain rejected. The gateway normalizes verified empty requests before proxying them to HA.
 - Add a default-off canonical media-player artwork GET route with separate HA bearer authentication, same-origin request checks, a 10-second ceiling and unconditional redirect rejection. Existing Access admission, identity mapping and revocation checks remain required.
 
 ## [0.1.2] - 2026-10-18
