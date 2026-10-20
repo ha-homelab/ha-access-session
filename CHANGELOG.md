@@ -4,7 +4,8 @@
 
 ### Changed
 
-- Abort unfinished `/session/ha` request bodies when host, origin, identity or route checks reject the request. HTTP/1 denials close the connection without waiting for a body drain; HTTP/2 denials leave other streams usable. Existing denial statuses and authentication order are preserved.
+- Abort unfinished request bodies when gateway host, origin, identity or route checks reject the request, including unknown paths and disabled OAuth/artwork routes. HTTP/1 denials close the connection without waiting for a body drain; HTTP/2 denials leave other streams usable. Existing denial statuses and authentication order are preserved.
+- Reject GET/HEAD requests with a positive or unknown content length, transfer encoding or trailers with 400 before local responses or proxying. This prevents ignored bodies from delaying health, session, static and WebSocket responses. Ordinary bodyless requests and accepted OAuth POST payloads retain their existing behavior.
 - Accept genuinely empty session requests with chunked HTTP/1 framing or an unknown HTTP/2 content length. Both the gateway and HA adapter now verify the decoded body with a one-byte read and a two-second deadline; nonempty bodies, read failures and stalled requests remain rejected. The gateway normalizes verified empty requests before proxying them to HA.
 - Add a default-off canonical media-player artwork GET route with separate HA bearer authentication, same-origin request checks, a 10-second ceiling and unconditional redirect rejection. Existing Access admission, identity mapping and revocation checks remain required.
 
@@ -14,7 +15,7 @@ Update the gateway and integration together from the verified candidate. Keep th
 
 ### Security
 
-Rejected session requests no longer hold an HTTP/1 connection waiting for an unfinished body. Signed identity, origin, revocation and route checks remain required, with the same denial statuses. Keep the origin restricted to the trusted edge; local protocol and lifecycle tests do not replace acceptance of the selected release on its intended targets.
+Gateway admission denials and local responses no longer hold an HTTP/1 connection waiting for an ignored body. GET/HEAD body framing is rejected before authentication; all other admission checks retain their order and statuses. Signed identity, origin, revocation and route checks remain required. Keep the origin restricted to the trusted edge; local protocol and lifecycle tests do not replace acceptance of the selected release on its intended targets.
 
 ## [0.1.2] - 2026-10-18
 

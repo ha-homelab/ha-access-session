@@ -318,9 +318,7 @@ func validNotBefore(raw json.RawMessage, now int64) bool {
 
 func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	deny := func(message string, status int) {
-		if r.URL.Path == "/session/ha" {
-			stopSessionBody(w, r)
-		}
+		stopRequestBody(w, r)
 		http.Error(w, message, status)
 	}
 	w.Header().Set("Cache-Control", "no-store")
@@ -328,6 +326,14 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	w.Header().Set("X-Robots-Tag", "noindex, nofollow")
 	w.Header().Set("X-Frame-Options", "DENY")
+	// These routes never consume a GET/HEAD body. Reject its framing before
+	// even local responses can trigger net/http's automatic body drain.
+	if (r.Method == http.MethodGet || r.Method == http.MethodHead) &&
+		(r.ContentLength != 0 || len(r.TransferEncoding) != 0 ||
+			len(r.Trailer) != 0 || len(r.Header.Values("Trailer")) != 0) {
+		deny("GET and HEAD requests must be bodyless", http.StatusBadRequest)
+		return
+	}
 	if r.Method == "GET" && r.URL.Path == "/healthz" {
 		w.WriteHeader(200)
 		return
