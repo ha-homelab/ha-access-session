@@ -1,5 +1,7 @@
 # HA Access Session
 
+[![RC fuzzing](https://img.shields.io/badge/fuzzing-RC_only-0a9f8f)](docs/fuzzing.md)
+
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15589/badge)](https://www.bestpractices.dev/projects/15589)
 
 **Contract v1 · one explicitly mapped Home Assistant administrator.**
