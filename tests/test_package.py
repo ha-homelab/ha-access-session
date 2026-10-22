@@ -1,6 +1,5 @@
 """Downloaded archives must contain setup files and linked documentation."""
 
-from pathlib import Path
 import posixpath
 import re
 import shutil
@@ -9,11 +8,54 @@ import sys
 import tarfile
 import tempfile
 import unittest
-from urllib.parse import unquote, urlsplit
 import zipfile
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+
+def markdown_links(text):
+    """Collect rendered links, excluding fenced Markdown examples."""
+    rendered = []
+    fence = None
+    for line in text.splitlines():
+        if fence is not None:
+            closing = rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*"
+            if re.fullmatch(closing, line):
+                fence = None
+            continue
+        opening = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
+        if opening and not (opening[1][0] == "`" and "`" in opening[2]):
+            fence = opening[1]
+            continue
+        rendered.append(line)
+    prose = "\n".join(rendered)
+    links = re.findall(r"\]\(([^\s)]+)(?:\s+[^)]*)?\)", prose)
+    links += re.findall(r"(?m)^\s{0,3}\[[^\]]+\]:\s*(\S+)", prose)
+    return links
 
 
 class PackageTest(unittest.TestCase):
+    def test_link_inventory_ignores_fenced_examples_but_keeps_real_links(self):
+        document = (
+            "[visible](installation.md)\n"
+            "```markdown\n"
+            "[example](docs/fuzzing.md)\n"
+            "[reference-example]: absent.md\n"
+            "````\n"
+            "~~~markdown\n"
+            "[another-example](absent.md)\n"
+            "```\n"
+            "[still-literal](also-absent.md)\n"
+            "~~~\n"
+            "![visible image](diagram.svg)\n"
+            "[actual-missing-link](missing.md)\n"
+            "[reference]: security.md\n"
+        )
+        self.assertEqual(
+            markdown_links(document),
+            ["installation.md", "diagram.svg", "missing.md", "security.md"],
+        )
+
     def test_distribution_archives_include_installation_and_linked_documentation(self):
         source = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as directory:
@@ -103,12 +145,9 @@ class PackageTest(unittest.TestCase):
 
     def assert_documentation_links(self, archive, names, documents):
         for name, data in documents.items():
-            text = data.decode("utf-8")
-            # Cover the inline links/images and reference definitions used by
-            # this repository. Fragments are navigation within a packaged file.
-            links = re.findall(r"\]\(([^\s)]+)(?:\s+[^)]*)?\)", text)
-            links += re.findall(r"(?m)^\s{0,3}\[[^\]]+\]:\s*(\S+)", text)
-            for link in links:
+            # Fragments are navigation within a packaged file. Fenced examples
+            # are literal text and do not create links in rendered Markdown.
+            for link in markdown_links(data.decode("utf-8")):
                 parsed = urlsplit(link.strip("<>"))
                 if parsed.scheme or parsed.netloc or not parsed.path:
                     continue
