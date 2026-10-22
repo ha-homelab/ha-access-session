@@ -2,6 +2,10 @@
 
 ## [0.1.3] - Unreleased
 
+### Fuzz validation
+
+- Add bounded public-RC fuzzing of production input boundaries, committed seeds, regression checks and source-bound campaign evidence. Beta and ordinary CI events do not run timed mutation.
+
 ### Changed
 
 - Report fixed, redacted categories for configuration file and JSON startup errors. Reject an unmatched TLS certificate/key flag before configuration access while preserving `--version` behavior.

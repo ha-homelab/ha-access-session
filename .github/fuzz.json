@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "language": "go",
+  "go-version-file": "go.mod",
+  "setup": [
+    [
+      "go",
+      "mod",
+      "download"
+    ],
+    [
+      "go",
+      "test",
+      "-c",
+      "-o",
+      "/tmp/ha-access-fuzz.test",
+      "./gateway"
+    ]
+  ],
+  "targets": [
+    {
+      "name": "session-body",
+      "engine": "go",
+      "command": [
+        "go",
+        "test",
+        "./gateway",
+        "-run=^$",
+        "-fuzz=^FuzzSessionBody$"
+      ],
+      "seconds": 60
+    },
+    {
+      "name": "artwork-admission",
+      "engine": "go",
+      "command": [
+        "go",
+        "test",
+        "./gateway",
+        "-run=^$",
+        "-fuzz=^FuzzArtworkAdmission$"
+      ],
+      "seconds": 60
+    }
+  ]
+}
