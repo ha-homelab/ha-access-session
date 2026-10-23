@@ -22,6 +22,8 @@ Update the gateway and integration together from the verified candidate. Keep th
 
 Gateway admission denials and local responses no longer hold an HTTP/1 connection waiting for an ignored body. GET/HEAD body framing is rejected before authentication; all other admission checks retain their order and statuses. Signed identity, origin, revocation and route checks remain required. Keep the origin restricted to the trusted edge; local protocol and lifecycle tests do not replace acceptance of the selected release on its intended targets.
 
+Build the gateway with Go 1.27.3 so `crypto/x509` rejects the distrusted intermediate certificates covered by [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809). TLS verification remains enabled; deploy the rebuilt gateway and integration together.
+
 ## [0.1.2] - 2026-10-18
 
 ### Changed
