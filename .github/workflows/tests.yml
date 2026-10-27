@@ -6,7 +6,7 @@ permissions:
 jobs:
   browser-compatibility:
     name: Session demo browser acceptance
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/typescript-ci.yml@6b2d99519d513d2b871d2a845ddd6134dea4af2c
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/typescript-ci.yml@94b1116449af128810b86f4c0c723602be17b372 # main
     permissions:
       contents: read
     with:
