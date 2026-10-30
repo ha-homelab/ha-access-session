@@ -6,7 +6,7 @@ permissions:
 jobs:
   browser-compatibility:
     name: Session demo browser acceptance
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/typescript-ci.yml@94b1116449af128810b86f4c0c723602be17b372 # main
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/typescript-ci.yml@e71559f44e41f39ad0037bf13c7f43bbbb2ec9af # main
     permissions:
       contents: read
     with:
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
         with:
           version: '0.13.4'
           enable-cache: false
@@ -45,7 +45,8 @@ jobs:
       - name: Install isolated Home Assistant runtime
         run: |
           uv venv --python "$(command -v python3)" .ha-test
-          uv pip install --python .ha-test/bin/python3 'homeassistant==2026.10.0'
+          uv pip install --python .ha-test/bin/python3 'homeassistant==2026.10.3'
+          uv pip check --python .ha-test/bin/python3
       - name: Validate source and behavior
         env:
           HA_PYTHON: ${{ github.workspace }}/.ha-test/bin/python3
