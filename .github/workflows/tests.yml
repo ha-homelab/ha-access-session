@@ -45,7 +45,8 @@ jobs:
       - name: Install isolated Home Assistant runtime
         run: |
           uv venv --python "$(command -v python3)" .ha-test
-          uv pip install --python .ha-test/bin/python3 'homeassistant==2026.10.0'
+          uv pip install --python .ha-test/bin/python3 'homeassistant==2026.10.3'
+          uv pip check --python .ha-test/bin/python3
       - name: Validate source and behavior
         env:
           HA_PYTHON: ${{ github.workspace }}/.ha-test/bin/python3
