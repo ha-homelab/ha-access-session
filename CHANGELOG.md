@@ -1,6 +1,16 @@
 # Changelog
 
-## [0.1.3] - Unreleased
+## [0.1.4] - Unreleased
+
+### Security
+
+- Rebuild the gateway with go-jose v4.1.6. The validated dependency update is included in the versioned gateway artifacts instead of remaining available only in source and nightly builds. Identity, origin and revocation checks retain their existing behavior.
+
+### Upgrade
+
+Install the gateway and integration from the same verified release. Preserve the existing trust configuration and the previous matching pair for rollback. This dependency refresh does not change the request protocol or deploy to a running Home Assistant instance.
+
+## [0.1.3] - 2026-10-24
 
 ### Fuzz validation
 
