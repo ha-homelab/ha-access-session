@@ -59,5 +59,12 @@
   "sign_releases": true,
   "fuzzing": {
     "toolkit_ref": "e71559f44e41f39ad0037bf13c7f43bbbb2ec9af"
+  },
+  "change_scope": {
+    "documentation_paths": [],
+    "required_paths": [],
+    "always_validate_workflows": [
+      "security.yml"
+    ]
   }
 }

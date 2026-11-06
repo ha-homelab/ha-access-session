@@ -39,7 +39,7 @@ jobs:
         env:
           DOCUMENTATION_PATHS: '[]'
           REQUIRED_PATHS: '[]'
-          FORCE_FULL: 'true'
+          FORCE_FULL: "${{ inputs.force-full && 'true' || 'false' }}"
         run: |
           args=()
           if [[ "$FORCE_FULL" == true ]]; then args+=(--force); fi
@@ -62,7 +62,6 @@ jobs:
     needs:
       - scope
       - workflow-contracts
-    if: ${{ needs.scope.outputs.run == 'true' }}
   workflow-contracts:
     name: CI configuration contracts
     runs-on: ${{ fromJSON((vars.CI_RUNNER_MODE == 'self-hosted' || vars.CI_RUNNER_MODE == 'k3s') && ((github.event_name
@@ -86,7 +85,6 @@ jobs:
       - run: python3 -m unittest discover -s .github/workflow-tests -p 'test_*.py'
     needs:
       - scope
-    if: ${{ needs.scope.outputs.run == 'true' }}
   release-contracts:
     name: Release tooling contracts
     runs-on: ${{ fromJSON((vars.CI_RUNNER_MODE == 'self-hosted' || vars.CI_RUNNER_MODE == 'k3s') && ((github.event_name
@@ -139,7 +137,7 @@ jobs:
           import json, os
           results = json.loads(os.environ['RESULTS'])
           expected = ['check-0', 'check-1', 'release-contracts', 'scope', 'workflow-contracts']
-          always = ['scope']
+          always = ['check-1', 'scope', 'workflow-contracts']
           if set(results) != set(expected):
               raise SystemExit('Validation job inventory differs')
           scope = results['scope']
