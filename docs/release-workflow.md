@@ -11,13 +11,13 @@ gate. Unknown files, incomplete history, code, workflows and lockfile changes ru
 full validation.
 
 The optional `change_scope` policy provides exact `documentation_paths`, exact
-`required_paths` for documentation used as a build input, and
+`required_paths` for documentation used as a build or release-contract input, and
 `always_validate_workflows` for independently required checks. Documentation paths
 cannot exempt source, tests, fixtures, build configuration or dependencies.
-Manual dispatch, scheduled runs and release qualification remain full. Only with
-explicit `change_scope` opt-in does a documentation-only push stop before release
-preparation, version allocation, artifact builds or publication. This does not
-change the configured nightly policy.
+Documentation-only skipping applies to PR and merge-queue Quality checks only.
+Main pushes, manual dispatch, scheduled runs and release qualification remain
+full, including required security and release-contract checks. This preserves
+current-source release guarantees and the configured nightly policy.
 
 ## Local checks
 
