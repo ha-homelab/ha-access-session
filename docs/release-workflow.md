@@ -19,6 +19,24 @@ Main pushes, manual dispatch, scheduled runs and release qualification remain
 full, including required security and release-contract checks. This preserves
 current-source release guarantees and the configured nightly policy.
 
+### Updating documentation-only CI routing
+
+The `toolkit_revision` in `.release-policy.json` records the historical imported
+release stack; it does not select the generator used for a later update. Keep
+existing action pins and release implementation when changing this routing.
+From a checkout of `victron-venus/venus-os-ci-toolkit` at commit
+`56863cf0beed5ab97c4f27d7adb5aedb83c758d5`, run:
+
+```sh
+python3 scripts/install_release.py /path/to/this-repository --change-scope-only
+python3 scripts/install_release.py /path/to/this-repository --change-scope-only --check
+```
+
+Review the resulting diff and run the workflow contract tests. The local
+`test_ci_release_scope_contract.py` test rejects any release entry point that
+stops requiring full validation. Custom validator additions still need an
+explicit graph review; this narrow command does not add new validators.
+
 ## Local checks
 
 Use Python 3.11+ for the CLI and the project toolchains documented in `scripts/ci.sh`.
