@@ -14,7 +14,8 @@
   ],
   "notes": [
     "Examples and screenshots are synthetic. Site configuration, credentials, real observations and private Git history are excluded.",
-    "Offline tests cover simulated boundaries. A beta release does not establish compatibility with every camera, network or Home Assistant installation."
+    "Offline tests cover simulated boundaries. A beta release does not establish compatibility with every camera, network or Home Assistant installation.",
+    "The configured release-note file remains a full-validation input so its current release section, upgrade notes and security notes are checked."
   ],
   "release_notes": "CHANGELOG.md",
   "single_entry_ci": true,
@@ -62,7 +63,9 @@
   },
   "change_scope": {
     "documentation_paths": [],
-    "required_paths": [],
+    "required_paths": [
+      "CHANGELOG.md"
+    ],
     "always_validate_workflows": [
       "security.yml"
     ]
