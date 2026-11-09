@@ -5,7 +5,7 @@ permissions:
   contents: read
 jobs:
   scan:
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/security-scan.yml@427a937de66be398d624822e1af558c0e019e0df # main
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/security-scan.yml@d4b21d156067ce58f89f89149bfad545e1889ae7 # main
     permissions:
       contents: read
       actions: read
