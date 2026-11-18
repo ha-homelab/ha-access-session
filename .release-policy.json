@@ -61,7 +61,7 @@
   "toolkit_revision": "f0bf0ec4921619f0de09ecd3eaa5e8673e4f9695",
   "sign_releases": true,
   "fuzzing": {
-    "toolkit_ref": "486d9b959599bed009f9fdafb55f0820070ce860"
+    "toolkit_ref": "644806e26446879b677f69a2f9eff58850e8c11a"
   },
   "change_scope": {
     "documentation_paths": [
