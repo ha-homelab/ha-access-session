@@ -22,6 +22,6 @@ qualification, signing and transport evidence that surrounds it.
 ## Release operations
 
 - [Verify a signed release](release-signatures.md) — checking the release manifest signature and the artifacts it covers.
-- [Patched release signer and verifier](release-signer.md) — the maintained signer build used for release manifests.
+- [Patched release signer and verifier](release-signer.md) — the downstream Cosign build, its CI export artifact and how to check the receipt.
 - [Qualified GitHub CLI for release operations](release-github-cli.md) — the pinned `gh` build and what it is qualified for.
 - [Verified release-client transport profile](release-tls-profile.md) — the transport settings a release client must use.
