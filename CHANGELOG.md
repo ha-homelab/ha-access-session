@@ -1,7 +1,29 @@
 # Changelog
 
-## [0.1.4] - Unreleased
+## [0.1.5] - Unreleased
 
+### Changed
+
+- describe the release signer export accurately.
+- add a navigation index for docs/.
+- preserve merge identity and withdrawn auto-merge requests (#58).
+- verify current default branch before reviewed merges (#55).
+- complete reviewed dependency approval and merge wiring (#54).
+- classify governance and roadmap changes as documentation (#52).
+- retain archive documentation contracts for documentation PRs (#51).
+- skip heavy validation for documentation-only changes (#50).
+- Complete dependency update migration to Renovate (#49).
+- recheck automatic publication source (#43).
+
+### Upgrade
+
+Install the gateway and integration from the same verified release. Preserve the existing trust configuration and the previous matching pair for rollback. This dependency refresh does not change the request protocol or deploy to a running Home Assistant instance.
+
+### Security
+
+- Rebuild the gateway with go-jose v4.1.6. The validated dependency update is included in the versioned gateway artifacts instead of remaining available only in source and nightly builds. Identity, origin and revocation checks retain their existing behavior.
+
+## [0.1.4] - 2026-11-02
 ### Security
 
 - Rebuild the gateway with go-jose v4.1.6. The validated dependency update is included in the versioned gateway artifacts instead of remaining available only in source and nightly builds. Identity, origin and revocation checks retain their existing behavior.
