@@ -1028,6 +1028,69 @@ class LifecycleTests(unittest.TestCase):  # pylint: disable=too-many-public-meth
         self.assertFalse(lifecycle.PLAN.exists())
         self.assertEqual((self.root / "version").read_bytes(), original)
 
+    def prepare_automatic_beta(self):
+        self.gh.runs[99]["event"] = "push"
+        os.environ["GITHUB_EVENT_NAME"] = "push"
+
+    def test_prepare_skips_proven_queued_successor_before_reservation(self):
+        self.prepare_automatic_beta()
+        self.advance_default()
+        self.gh.successors[0]["status"] = "queued"
+        refs = copy.deepcopy(self.gh.refs)
+        releases = copy.deepcopy(self.gh.releases)
+        version = (self.root / "version").read_bytes()
+        result = lifecycle.prepare(self.args)
+        self.assertEqual(result["status"], "superseded")
+        self.assertEqual(result["channel"], "beta")
+        self.assertEqual(result["version"], "")
+        self.assertEqual(result["build"], "false")
+        self.assertEqual(result["plan_artifact"], "")
+        self.assertEqual(result["superseded_by"], "b" * 40)
+        self.assertEqual(result["successor_run_id"], "100")
+        self.assertEqual(
+            result["successor_run_url"],
+            f"https://github.com/{REPO}/actions/runs/100",
+        )
+        self.assertEqual(self.gh.ledger_writes, [])
+        self.assertEqual(self.gh.writes, [])
+        self.assertEqual(self.gh.refs, refs)
+        self.assertEqual(self.gh.releases, releases)
+        self.assertFalse(lifecycle.PLAN.exists())
+        self.assertFalse(rc.EVIDENCE.exists())
+        self.assertEqual((self.root / "version").read_bytes(), version)
+
+    def test_prepare_ignores_supersession_detector_api_error(self):
+        self.prepare_automatic_beta()
+        self.advance_default()
+        with patch.object(
+            lifecycle.rc, "superseded_candidate",
+            side_effect=rc.GitHubError("HTTP 503"),
+        ) as detector:
+            result = lifecycle.prepare(self.args)
+        detector.assert_called_once()
+        self.assertEqual(result["channel"], "beta")
+        self.assertEqual(result["version"], "1.2.3")
+        self.assertEqual(result["build"], "true")
+        self.assertEqual(result["plan_artifact"], "release-plan-99-1")
+        self.assertEqual(len(self.gh.ledger_writes), 1)
+        self.assertEqual(self.gh.writes, [])
+        self.assertTrue(lifecycle.PLAN.exists())
+        self.assertEqual(json.loads(lifecycle.PLAN.read_bytes())["channel"], "beta")
+
+    def test_prepare_ignores_ambiguous_successor(self):
+        self.prepare_automatic_beta()
+        self.advance_default()
+        self.gh.successors.append(copy.deepcopy(self.gh.successors[0]))
+        result = lifecycle.prepare(self.args)
+        self.assertEqual(result["channel"], "beta")
+        self.assertEqual(result["version"], "1.2.3")
+        self.assertEqual(result["build"], "true")
+        self.assertEqual(result["plan_artifact"], "release-plan-99-1")
+        self.assertEqual(len(self.gh.ledger_writes), 1)
+        self.assertEqual(self.gh.writes, [])
+        self.assertTrue(lifecycle.PLAN.exists())
+        self.assertEqual(json.loads(lifecycle.PLAN.read_bytes())["channel"], "beta")
+
     def test_closed_push_cycle_does_not_bypass_source_or_version_checks(self):
         self.gh.refs["v1.2.3"] = {
             "ref": "refs/tags/v1.2.3",
